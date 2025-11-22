@@ -108,6 +108,11 @@ const App: React.FC = () => {
 
     const asset = assets.find(a => a.id === assetId);
     if (asset) {
+      if (asset.balance < amount) {
+        alert("Solde insuffisant");
+        return;
+      }
+
       const newBalance = asset.balance - amount;
       const updatedAssets = assets.map(a => a.id === assetId ? {...a, balance: newBalance} : a);
       setAssets(updatedAssets);
