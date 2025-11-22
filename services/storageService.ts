@@ -1,9 +1,9 @@
 
-import { Asset, Transaction, UserProfile, WalletAccount, Contact } from '../types';
-import { DEFAULT_NETWORKS } from '../constants';
-import { ChainService } from './chainService';
-import { FirebaseService } from './firebaseConfig';
-import { CryptoService } from './cryptoService';
+import { Asset, Transaction, UserProfile, WalletAccount, Contact } from '../types.ts';
+import { DEFAULT_NETWORKS } from '../constants.ts';
+import { ChainService } from './chainService.tsx';
+import { FirebaseService } from './firebaseConfig.tsx';
+import { CryptoService } from './cryptoService.tsx';
 
 const STORAGE_KEYS = {
   USER: 'malin_user_v5_encrypted', // New version

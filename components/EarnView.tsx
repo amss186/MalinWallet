@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
 import { TrendingUp, ShieldCheck, AlertCircle, ChevronRight, Info, Check, Percent } from 'lucide-react';
-import { STAKING_OPTIONS, TRANSLATIONS } from '../constants';
-import { UserProfile, Asset } from '../types';
-import { StorageService } from '../services/storageService';
+import { STAKING_OPTIONS, TRANSLATIONS } from '../constants.ts';
+import { UserProfile, Asset } from '../types.ts';
+import { StorageService } from '../services/storageService.ts';
 
 interface EarnViewProps {}
 

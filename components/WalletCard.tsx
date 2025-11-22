@@ -1,6 +1,6 @@
 
 import React, { useRef } from 'react';
-import { Asset } from '../types';
+import { Asset } from '../types.ts';
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
 interface WalletCardProps {

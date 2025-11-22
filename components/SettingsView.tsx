@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
 import { X, ChevronRight, Shield, Globe, User, Bell, Info, Plus, Trash2, Smartphone, Key, Lock, Link, LogOut } from 'lucide-react';
-import { UserProfile, Contact, Network } from '../types';
-import { StorageService } from '../services/storageService';
-import { DEFAULT_NETWORKS, TRANSLATIONS } from '../constants';
+import { UserProfile, Contact, Network } from '../types.ts';
+import { StorageService } from '../services/storageService.ts';
+import { DEFAULT_NETWORKS, TRANSLATIONS } from '../constants.ts';
 
 interface SettingsViewProps {
   user: UserProfile;

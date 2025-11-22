@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
 import { X, Check, Search } from 'lucide-react';
-import { SUPPORTED_CHAINS } from '../constants';
-import { Asset, ChainType } from '../types';
+import { SUPPORTED_CHAINS } from '../constants.ts';
+import { Asset, ChainType } from '../types.ts';
 
 interface AddAssetModalProps {
   isOpen: boolean;

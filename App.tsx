@@ -14,23 +14,23 @@ import {
   Settings,
   TrendingUp
 } from 'lucide-react';
-import AIChat from './components/AIChat';
-import PortfolioAnalytics from './components/PortfolioAnalytics';
-import LearningHub from './components/LearningHub';
-import AuthScreen from './components/AuthScreen';
-import AddAssetModal from './components/AddAssetModal';
-import ReceiveModal from './components/ReceiveModal';
-import SendModal from './components/SendModal';
-import WalletManagerModal from './components/WalletManagerModal';
-import WalletConnectModal from './components/WalletConnectModal'; // Import WC Modal
-import Dashboard from './components/Dashboard';
-import SwapView from './components/SwapView';
-import DAppsView from './components/DAppsView';
-import SettingsView from './components/SettingsView';
-import EarnView from './components/EarnView';
-import { ViewState, Asset, Transaction, UserProfile, WalletConnectSession } from './types';
-import { StorageService } from './services/storageService';
-import { TRANSLATIONS } from './constants';
+import AIChat from './components/AIChat.tsx';
+import PortfolioAnalytics from './components/PortfolioAnalytics.tsx';
+import LearningHub from './components/LearningHub.tsx';
+import AuthScreen from './components/AuthScreen.tsx';
+import AddAssetModal from './components/AddAssetModal.tsx';
+import ReceiveModal from './components/ReceiveModal.tsx';
+import SendModal from './components/SendModal.tsx';
+import WalletManagerModal from './components/WalletManagerModal.tsx';
+import WalletConnectModal from './components/WalletConnectModal.tsx'; // Import WC Modal
+import Dashboard from './components/Dashboard.tsx';
+import SwapView from './components/SwapView.tsx';
+import DAppsView from './components/DAppsView.tsx';
+import SettingsView from './components/SettingsView.tsx';
+import EarnView from './components/EarnView.tsx';
+import { ViewState, Asset, Transaction, UserProfile, WalletConnectSession } from './types.ts';
+import { StorageService } from './services/storageService.ts';
+import { TRANSLATIONS } from './constants.ts';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<UserProfile | null>(null);

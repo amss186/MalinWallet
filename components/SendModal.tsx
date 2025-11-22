@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, ArrowRight, Send, ShieldAlert, Fuel, Sparkles } from 'lucide-react';
-import { Asset } from '../types';
-import { ChainService } from '../services/chainService';
-import { getFastResponse } from '../services/geminiService';
-import { DEFAULT_NETWORKS } from '../constants';
+import { Asset } from '../types.ts';
+import { ChainService } from '../services/chainService.ts';
+import { getFastResponse } from '../services/geminiService.ts';
+import { DEFAULT_NETWORKS } from '../constants.ts';
 
 interface SendModalProps {
   isOpen: boolean;
