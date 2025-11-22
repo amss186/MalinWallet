@@ -1,0 +1,7 @@
+{
+  "name": "MalinWallet",
+  "description": "A next-generation non-custodial crypto wallet featuring integrated AI intelligence, multi-chain support, and bank-grade security simulation.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
