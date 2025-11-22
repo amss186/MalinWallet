@@ -14,20 +14,20 @@ import {
   Settings,
   TrendingUp
 } from 'lucide-react';
-import AIChat from './components/AIChat';
-import PortfolioAnalytics from './components/PortfolioAnalytics';
-import LearningHub from './components/LearningHub';
-import AuthScreen from './components/AuthScreen';
-import AddAssetModal from './components/AddAssetModal';
-import ReceiveModal from './components/ReceiveModal';
-import SendModal from './components/SendModal';
-import WalletManagerModal from './components/WalletManagerModal';
-import WalletConnectModal from './components/WalletConnectModal'; // Import WC Modal
-import Dashboard from './components/Dashboard';
-import SwapView from './components/SwapView';
-import DAppsView from './components/DAppsView';
-import SettingsView from './components/SettingsView';
-import EarnView from './components/EarnView';
+import AIChat from './component/AIChat';
+import PortfolioAnalytics from './component/PortfolioAnalytics';
+import LearningHub from './component/LearningHub';
+import AuthScreen from './component/AuthScreen';
+import AddAssetModal from './component/AddAssetModal';
+import ReceiveModal from './component/ReceiveModal';
+import SendModal from './component/SendModal';
+import WalletManagerModal from './component/WalletManagerModal';
+import WalletConnectModal from './component/WalletConnectModal'; // Import WC Modal
+import Dashboard from './component/Dashboard';
+import SwapView from './component/SwapView';
+import DAppsView from './component/DAppsView';
+import SettingsView from './component/SettingsView';
+import EarnView from './component/EarnView';
 import { ViewState, Asset, Transaction, UserProfile, WalletConnectSession } from './types';
 import { StorageService } from './services/storageService';
 import { TRANSLATIONS } from './constants';
@@ -108,6 +108,11 @@ const App: React.FC = () => {
 
     const asset = assets.find(a => a.id === assetId);
     if (asset) {
+      if (asset.balance < amount) {
+        alert("Solde insuffisant");
+        return;
+      }
+
       const newBalance = asset.balance - amount;
       const updatedAssets = assets.map(a => a.id === assetId ? {...a, balance: newBalance} : a);
       setAssets(updatedAssets);
