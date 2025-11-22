@@ -1,5 +1,5 @@
 
-import { ChainType, Network, StakingOption } from './types';
+import { ChainType, Network, StakingOption } from './types.ts';
 
 export const INITIAL_SYSTEM_INSTRUCTION = `
 You are Malin, the advanced AI core of **MalinWallet**, a secure, non-custodial, and industry-leading crypto wallet.

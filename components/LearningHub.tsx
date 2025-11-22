@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { BookOpen, GraduationCap, Play, ChevronRight, CheckCircle, XCircle, HelpCircle, Sparkles } from 'lucide-react';
-import { generateQuiz } from '../services/geminiService';
-import { Quiz } from '../types';
+import { generateQuiz } from '../services/geminiService.ts';
+import { Quiz } from '../types.ts';
 
 const MODULES = [
   { id: 1, title: 'Crypto Basics', level: 'Beginner', desc: 'What is blockchain and how does it work?', color: 'from-blue-500 to-cyan-500' },

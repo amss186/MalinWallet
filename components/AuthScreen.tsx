@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
 import { Sparkles, Mail, Lock, ArrowRight, ShieldCheck, Fingerprint, CheckCircle, Eye, EyeOff, AlertTriangle, RefreshCw, ChevronLeft } from 'lucide-react';
-import { StorageService } from '../services/storageService';
-import { FirebaseService } from '../services/firebaseConfig';
-import { UserProfile } from '../types';
+import { StorageService } from '../services/storageService.ts';
+import { FirebaseService } from '../services/firebaseConfig.ts';
+import { UserProfile } from '../types.ts';
 
 interface AuthScreenProps {
   onAuthenticated: (user: UserProfile) => void;

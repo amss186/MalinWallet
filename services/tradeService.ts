@@ -1,5 +1,5 @@
 
-import { API_KEYS, TOKEN_ADDRESSES, CHAIN_TOKEN_ADDRESSES, TOKEN_DECIMALS } from '../constants';
+import { API_KEYS, TOKEN_ADDRESSES, CHAIN_TOKEN_ADDRESSES, TOKEN_DECIMALS } from '../constants.ts';
 
 // Service 0x pour les Swaps (Même blockchain - Defaults to ETH Mainnet for this demo)
 export const ZeroExService = {

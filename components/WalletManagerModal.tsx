@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { X, Wallet, Plus, Check } from 'lucide-react';
-import { UserProfile } from '../types';
+import { UserProfile } from '../types.ts';
 
 interface WalletManagerModalProps {
   isOpen: boolean;

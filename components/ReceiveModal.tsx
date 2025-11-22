@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { X, Copy, Share2, QrCode } from 'lucide-react';
-import { WalletAccount } from '../types';
+import { WalletAccount } from '../types.ts';
 
 interface ReceiveModalProps {
   isOpen: boolean;

@@ -1,6 +1,6 @@
 
-import { API_KEYS } from '../constants';
-import { NFT } from '../types';
+import { API_KEYS } from '../constants.ts';
+import { NFT } from '../types.ts';
 
 export const ChainService = {
   // Génération cryptographique réelle d'une adresse type Ethereum

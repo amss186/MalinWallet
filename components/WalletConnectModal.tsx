@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { X, ShieldCheck, Globe, Check } from 'lucide-react';
-import { WalletConnectSession } from '../types';
+import { WalletConnectSession } from '../types.ts';
 
 interface WalletConnectModalProps {
   isOpen: boolean;

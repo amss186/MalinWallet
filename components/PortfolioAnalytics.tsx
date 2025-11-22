@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis } from 'recharts';
-import { Asset } from '../types';
+import { Asset } from '../types.ts';
 import { BrainCircuit, Sparkles, RefreshCw, TrendingUp } from 'lucide-react';
-import { analyzePortfolio } from '../services/geminiService';
+import { analyzePortfolio } from '../services/geminiService.ts';
 
 interface PortfolioAnalyticsProps {
   assets: Asset[];

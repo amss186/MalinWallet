@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Search, ShieldAlert, Globe, ExternalLink, Lock, ChevronLeft, ChevronRight, RotateCw, X, Plus, LayoutTemplate, History, Star, Zap, ShieldCheck, ScanLine } from 'lucide-react';
-import { UserProfile, DAppHistoryItem } from '../types';
-import { StorageService } from '../services/storageService';
-import { TRANSLATIONS } from '../constants';
+import { UserProfile, DAppHistoryItem } from '../types.ts';
+import { StorageService } from '../services/storageService.ts';
+import { TRANSLATIONS } from '../constants.ts';
 
 interface BrowserTab {
   id: string;

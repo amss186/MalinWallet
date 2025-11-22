@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Send, ArrowDown, Plus, Trash2, Sparkles, ArrowRightLeft, ChevronDown, RefreshCw, Eye, EyeOff, Image, Clock, Wallet, ShieldCheck, TrendingUp, Zap, MoveUpRight } from 'lucide-react';
-import WalletCard from './WalletCard';
-import { Asset, Transaction, UserProfile, Network, NFT } from '../types';
-import { StorageService } from '../services/storageService';
-import { ChainService } from '../services/chainService';
-import { TRANSLATIONS } from '../constants';
-import BuyModal from './BuyModal';
+import WalletCard from './WalletCard.tsx';
+import { Asset, Transaction, UserProfile, Network, NFT } from '../types.ts';
+import { StorageService } from '../services/storageService.ts';
+import { ChainService } from '../services/chainService.ts';
+import { TRANSLATIONS } from '../constants.ts';
+import BuyModal from './BuyModal.tsx';
 
 interface DashboardProps {
   user: UserProfile;

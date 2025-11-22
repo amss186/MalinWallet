@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { ArrowDownUp, Info, ShieldCheck, RefreshCw, BrainCircuit, Repeat, GitCompareArrows } from 'lucide-react';
-import { Asset } from '../types';
-import { ZeroExService, LiFiService } from '../services/tradeService';
+import { Asset } from '../types.ts';
+import { ZeroExService, LiFiService } from '../services/tradeService.ts';
 
 interface SwapViewProps {
   assets: Asset[];

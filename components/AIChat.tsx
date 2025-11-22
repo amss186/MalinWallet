@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, MapPin, Globe, BrainCircuit, Loader2, Sparkles, X } from 'lucide-react';
-import { sendMessageToGemini, sendThinkingMessage } from '../services/geminiService';
-import { Message } from '../types';
+import { sendMessageToGemini, sendThinkingMessage } from '../services/geminiService.ts';
+import { Message } from '../types.ts';
 
 interface AIChatProps {
   isOpen: boolean;
