@@ -3,9 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import { ChainService } from '@/lib/chain';
 import { auth, db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { Asset, UserProfile } from '@/types';
-import { Wallet, Send, ArrowDownLeft, RefreshCw, Plus } from 'lucide-react';
+import { WalletService } from '@/lib/wallet';
+import { Wallet, Send, ArrowDownLeft, RefreshCw, Plus, Download, X } from 'lucide-react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Image from 'next/image';
@@ -15,75 +16,22 @@ export default function DashboardPage() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [totalBalance, setTotalBalance] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importInput, setImportInput] = useState('');
+  const [encryptionPassword, setEncryptionPassword] = useState('');
+  const [isImporting, setIsImporting] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       if (!auth.currentUser) return;
 
       try {
-        // 1. Get User Profile
-        const userRef = doc(db, "users", auth.currentUser.uid);
-        const snap = await getDoc(userRef);
-        if (snap.exists()) {
-          const userData = snap.data() as UserProfile;
-          setUser(userData);
-          // Assuming activeWalletAddress is stored in activeWalletId based on previous context,
-          // or we need to find the wallet in wallets array.
-          // Types.ts says activeWalletId, but Onboarding used activeWalletAddress.
-          // Let's assume activeWalletAddress for now or adapt based on data.
-          // However, the types in types/index.ts are cleaner for this small scope.
-          // But types.ts seems to be the global one.
-
-          // Let's rely on what we see in the component's imports.
-          // It imports from @/types.
-
-          // Wait, types/index.ts was read first, then types.ts.
-          // The component imports from '@/types'.
-          // If both types/index.ts and types.ts exist, it depends on tsconfig paths.
-          // Usually types/index.ts would be resolved if import is '@/types' and 'types' is a folder.
-
-          // Let's fix the Asset type mismatch.
-          // types/index.ts has `balance: string`.
-          // types.ts has `balance: number`.
-          // The error said "decimals does not exist in type Asset".
-          // types.ts Asset DOES NOT have decimals.
-          // types/index.ts Asset DOES have decimals.
-
-          // So the component is using the Asset from types.ts (which lacks decimals),
-          // but trying to assign decimals.
-
-          // I should consolidate types or fix the component.
-          // Given the user wants fixes, I will update types.ts to include decimals,
-          // or cast it if I can't touch types.ts easily (but I can).
-
-          // Actually, I will modify types.ts to include decimals since it's standard for crypto assets.
-        }
-      } catch (e) {
-        console.error(e);
-        toast.error("Erreur de chargement des données");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    // fetchData(); // Temporarily commented out until I fix the types issue properly
-  }, []);
-
-  // Re-implementing fetchData inside useEffect with fixed logic
-   useEffect(() => {
-    const fetchData = async () => {
-      if (!auth.currentUser) return;
-
-      try {
         const userRef = doc(db, "users", auth.currentUser.uid);
         const snap = await getDoc(userRef);
         if (snap.exists()) {
           const userData = snap.data() as UserProfile;
           setUser(userData);
 
-          // We need an address.
-          // If userData follows types.ts, it has activeWalletId.
-          // We need to find the wallet with that ID.
           let address = "";
           if (userData.activeWalletId) {
              const wallet = userData.wallets.find(w => w.id === userData.activeWalletId);
@@ -96,9 +44,7 @@ export default function DashboardPage() {
 
           if (address) {
              const ethBal = await ChainService.getNativeBalance(address);
-             // const tokens = await ChainService.getTokenBalances(address);
 
-             // Construct Asset matching types.ts
              const ethAsset: Asset = {
                 id: 'eth',
                 symbol: 'ETH',
@@ -108,8 +54,8 @@ export default function DashboardPage() {
                 change24h: 0,
                 chain: 'ETH',
                 color: '#627eea',
-                decimals: 18 // Adding this property requires updating the interface
-             } as any; // Temporary cast to avoid type error while we fix the interface
+                decimals: 18
+             } as any;
 
              setAssets([ethAsset]);
              setTotalBalance(parseFloat(ethBal) * 2200);
@@ -126,23 +72,135 @@ export default function DashboardPage() {
     fetchData();
   }, []);
 
+  const handleImportWallet = async () => {
+    if (!importInput || !encryptionPassword) {
+        toast.error("Veuillez remplir tous les champs");
+        return;
+    }
+
+    if (encryptionPassword.length < 8) {
+        toast.error("Le mot de passe doit faire au moins 8 caractères");
+        return;
+    }
+
+    setIsImporting(true);
+    try {
+        // 1. Recover Wallet
+        let wallet;
+        if (importInput.includes(' ')) {
+             wallet = WalletService.recoverWallet(importInput);
+        } else {
+             const { ethers } = await import('ethers');
+             const w = new ethers.Wallet(importInput);
+             wallet = { address: w.address, privateKey: w.privateKey };
+        }
+
+        if (!wallet) throw new Error("Wallet invalide");
+
+        // 2. Encrypt Private Key
+        const encryptedKey = await WalletService.encrypt(wallet.privateKey, encryptionPassword);
+
+        // 3. Save to Firestore
+        const userRef = doc(db, "users", auth.currentUser!.uid);
+        const newWallet = {
+            id: crypto.randomUUID(),
+            name: `Wallet Importé ${user?.wallets.length ? user.wallets.length + 1 : 1}`,
+            address: wallet.address,
+            encryptedPrivateKey: encryptedKey,
+            color: '#10b981', // Emerald for imported
+            createdAt: new Date().toISOString()
+        };
+
+        await updateDoc(userRef, {
+            wallets: arrayUnion(newWallet)
+        });
+
+        toast.success("Wallet importé avec succès !");
+        setShowImportModal(false);
+        setImportInput('');
+        setEncryptionPassword('');
+        // Reload page to reflect changes (simple way)
+        window.location.reload();
+
+    } catch (e: any) {
+        toast.error("Erreur d'importation: " + e.message);
+    } finally {
+        setIsImporting(false);
+    }
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center h-full text-indigo-500 animate-pulse">Chargement des données blockchain...</div>;
   }
 
   return (
-    <div className="space-y-8">
-       <ToastContainer theme="dark" />
+    <div className="space-y-8 relative">
+       <ToastContainer theme="dark" position="top-center" />
+
+       {/* Import Modal */}
+       {showImportModal && (
+         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
+                <button
+                  onClick={() => setShowImportModal(false)}
+                  className="absolute top-4 right-4 text-slate-400 hover:text-white"
+                >
+                    <X size={20} />
+                </button>
+                <h2 className="text-xl font-bold text-white mb-4">Importer un Wallet</h2>
+
+                <div className="space-y-4">
+                    <div>
+                        <label className="text-sm text-slate-400 mb-1 block">Phrase Secrète ou Clé Privée</label>
+                        <textarea
+                            value={importInput}
+                            onChange={(e) => setImportInput(e.target.value)}
+                            className="w-full bg-black/40 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500 text-sm h-24"
+                            placeholder="Entrez vos 12 mots ou votre clé privée..."
+                        />
+                    </div>
+
+                    <div>
+                        <label className="text-sm text-slate-400 mb-1 block">Nouveau mot de passe de chiffrement</label>
+                        <input
+                            type="password"
+                            value={encryptionPassword}
+                            onChange={(e) => setEncryptionPassword(e.target.value)}
+                            className="w-full bg-black/40 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500 text-sm"
+                            placeholder="Pour sécuriser cette clé"
+                        />
+                    </div>
+
+                    <button
+                        onClick={handleImportWallet}
+                        disabled={isImporting}
+                        className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition flex items-center justify-center gap-2"
+                    >
+                        {isImporting ? <RefreshCw className="animate-spin" /> : <Download size={20} />}
+                        Importer
+                    </button>
+                </div>
+            </div>
+         </div>
+       )}
 
        {/* Header / Total Balance */}
        <div className="bg-gradient-to-br from-indigo-900/50 to-purple-900/50 border border-white/10 rounded-3xl p-8 relative overflow-hidden">
           <div className="relative z-10">
-             <p className="text-indigo-200 font-medium mb-2">Solde Total Estimé</p>
+             <div className="flex justify-between items-start mb-2">
+                 <p className="text-indigo-200 font-medium">Solde Total Estimé</p>
+                 <button
+                   onClick={() => setShowImportModal(true)}
+                   className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-xs px-3 py-1.5 rounded-lg text-indigo-200 transition"
+                 >
+                    <Download size={14} /> Importer un wallet
+                 </button>
+             </div>
              <h1 className="text-5xl font-bold text-white mb-6">
                ${totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
              </h1>
 
-             <div className="flex gap-4">
+             <div className="flex gap-4 flex-wrap">
                 <button className="flex items-center gap-2 bg-white text-indigo-900 px-6 py-3 rounded-xl font-bold hover:bg-indigo-50 transition">
                    <Send size={20} /> Envoyer
                 </button>
