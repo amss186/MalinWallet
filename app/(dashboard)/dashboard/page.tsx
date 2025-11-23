@@ -39,7 +39,7 @@ export default function DashboardPage() {
           const ethAsset: Asset = {
             symbol: 'ETH',
             name: 'Ethereum',
-            balance: parsefloat(ethBal),
+            balance: parseFloat(ethBal),
             decimals: 18,
             price: 0, // Need price feed later
             chainId: 1,
