@@ -3,7 +3,7 @@
 // -----------------------------------------------------------------------------
 // 1. Importations : Regroupez toutes les importations nécessaires ici.
 // -----------------------------------------------------------------------------
-import { initializeApp, getApps, getApp } from "firebase/app";
+import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app"; // Ajout de FirebaseApp
 import { 
   getAuth, 
   GoogleAuthProvider, 
@@ -12,35 +12,37 @@ import {
   signInWithEmailAndPassword,
   sendEmailVerification,
   sendPasswordResetEmail,
-  User, // N'oubliez pas d'importer 'User' si vous l'utilisez
-  Auth, // Importez Auth si vous typiez explicitement
+  User,
+  Auth, // Importé pour le typage
 } from "firebase/auth";
-import { getFirestore, doc, setDoc, getDoc, Firestore } from "firebase/firestore"; // Importez Firestore si vous typiez explicitement
-import { getAnalytics, isSupported, Analytics } from "firebase/analytics"; // Importez Analytics si vous typiez explicitement
+import { getFirestore, doc, setDoc, getDoc, Firestore } from "firebase/firestore"; // Importé pour le typage
+import { getAnalytics, isSupported, Analytics } from "firebase/analytics"; // Importé pour le typage
 
 
 // -----------------------------------------------------------------------------
 // 2. Configuration Firebase : Définition UNIQUE de la configuration de votre projet.
 //    Utilisez les variables d'environnement pour maintenir la sécurité.
+//    Assurez-vous que ces variables sont correctement définies dans votre fichier .env.local
+//    et correspondent à votre projet 'malin-wallet'.
 // -----------------------------------------------------------------------------
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID, // Doit être "malin-wallet"
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID // Pour Google Analytics
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
 
 // -----------------------------------------------------------------------------
 // 3. Initialisation UNIQUE de l'application Firebase (Singleton Pattern).
-//    C'est ici que l'application Firebase, l'authentification et Firestore sont initialisées.
+//    Typage explicite des instances pour TypeScript.
 // -----------------------------------------------------------------------------
-let app;
-let auth: Auth; // Typage explicite pour Auth
-let db: Firestore; // Typage explicite pour Firestore
+let app: FirebaseApp; // Type explicite pour 'app'
+let auth: Auth; 
+let db: Firestore; 
 
 // Utilisation du modèle Singleton pour s'assurer que Firebase n'est initialisé qu'une seule fois.
 if (getApps().length === 0) {
@@ -57,7 +59,7 @@ const googleProvider = new GoogleAuthProvider();
 // -----------------------------------------------------------------------------
 // 4. Initialisation conditionnelle d'Analytics (pour le côté client uniquement).
 // -----------------------------------------------------------------------------
-let analytics: Analytics | null = null; // Typage explicite pour Analytics
+let analytics: Analytics | null = null; 
 if (typeof window !== "undefined") {
   isSupported().then((supported) => {
     if (supported) {
@@ -85,7 +87,6 @@ export const FirebaseService = {
 
   // Authentification Google
   signInWithGoogle: async () => {
-    // 'auth' est déjà initialisé globalement, donc pas besoin de le vérifier
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
     return result;
@@ -122,17 +123,15 @@ export const FirebaseService = {
   
   saveUserProfile: async (userProfile: any) => {
     try {
-      // Utilisez l'instance 'db' déjà initialisée
       await setDoc(doc(db, "users", userProfile.uid), userProfile, { merge: true });
     } catch (e) {
       console.error("Firestore Save Error", e);
-      throw e; // Renvoyez l'erreur pour que l'appelant puisse la gérer
+      throw e; 
     }
   },
 
   getUserProfile: async (uid: string) => {
     try {
-      // Utilisez l'instance 'db' déjà initialisée
       const docRef = doc(db, "users", uid);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
@@ -141,7 +140,7 @@ export const FirebaseService = {
       return null;
     } catch (e) {
       console.error("Firestore Get Error", e);
-      throw e; // Renvoyez l'erreur
+      throw e; 
     }
   }
 };
