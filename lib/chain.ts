@@ -79,9 +79,13 @@ export const ChainService = {
 
         const meta = metadataRes.data.result;
         if (meta) {
-          const balance = ethers.formatUnits(token.tokenBalance, meta.decimals);
+          const balance = parseFloat(ethers.formatUnits(token.tokenBalance, meta.decimals));
           // Only add if meaningful balance? Or user wants everything. Let's keep all.
           assets.push({
+            id: token.contractAddress,
+            color: '#ccc', // default
+            change24h: 0,
+            chain: 'ETH',
             symbol: meta.symbol,
             name: meta.name,
             balance: balance,

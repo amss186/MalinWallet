@@ -20,7 +20,7 @@ export const CryptoService = {
     return window.crypto.subtle.deriveKey(
       {
         name: "PBKDF2",
-        salt: salt,
+        salt: salt as any,
         iterations: 100000,
         hash: "SHA-256"
       },
@@ -50,7 +50,11 @@ export const CryptoService = {
     combined.set(iv, salt.length);
     combined.set(new Uint8Array(encrypted), salt.length + iv.length);
 
-    return btoa(String.fromCharCode(...combined));
+    let binary = '';
+    for (let i = 0; i < combined.length; i++) {
+        binary += String.fromCharCode(combined[i]);
+    }
+    return btoa(binary);
   },
 
   // Déchiffre une donnée avec le mot de passe

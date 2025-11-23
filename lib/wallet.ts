@@ -12,12 +12,19 @@ export const WalletService = {
    * This happens entirely client-side.
    */
   createWallet: () => {
-    const wallet = ethers.Wallet.createRandom();
-    return {
-      address: wallet.address,
-      privateKey: wallet.privateKey,
-      mnemonic: wallet.mnemonic?.phrase,
-    };
+    try {
+        const wallet = ethers.Wallet.createRandom();
+        if (!wallet.mnemonic || !wallet.address || !wallet.privateKey) {
+            throw new Error("Failed to generate wallet info");
+        }
+        return {
+            address: wallet.address,
+            privateKey: wallet.privateKey,
+            mnemonic: wallet.mnemonic.phrase,
+        };
+    } catch (e: any) {
+        throw new Error("Wallet generation failed: " + e.message);
+    }
   },
 
   /**
@@ -25,6 +32,12 @@ export const WalletService = {
    */
   recoverWallet: (mnemonic: string) => {
     try {
+      // Validate mnemonic word count
+      const wordCount = mnemonic.trim().split(/\s+/).length;
+      if (wordCount !== 12 && wordCount !== 24) {
+          throw new Error("Invalid mnemonic length. Must be 12 or 24 words.");
+      }
+
       const wallet = ethers.Wallet.fromPhrase(mnemonic);
       return {
         address: wallet.address,
@@ -39,6 +52,10 @@ export const WalletService = {
    * Derives a CryptoKey from a user's password using PBKDF2
    */
   deriveKey: async (password: string, salt: Uint8Array): Promise<CryptoKey> => {
+    if (typeof window === "undefined" || !window.crypto || !window.crypto.subtle) {
+        throw new Error("Crypto API not supported in this environment");
+    }
+
     const enc = new TextEncoder();
     const keyMaterial = await window.crypto.subtle.importKey(
       "raw",
@@ -51,7 +68,7 @@ export const WalletService = {
     return window.crypto.subtle.deriveKey(
       {
         name: "PBKDF2",
-        salt: salt,
+        salt: salt as any,
         iterations: ITERATIONS,
         hash: DIGEST
       },
@@ -67,6 +84,8 @@ export const WalletService = {
    * Returns a JSON string containing the encrypted data, IV, and Salt.
    */
   encrypt: async (data: string, password: string): Promise<string> => {
+    if (!data || !password) throw new Error("Missing data or password");
+
     const salt = window.crypto.getRandomValues(new Uint8Array(16));
     const iv = window.crypto.getRandomValues(new Uint8Array(12));
     const key = await WalletService.deriveKey(password, salt);
@@ -79,8 +98,14 @@ export const WalletService = {
     );
 
     // Convert buffers to Base64 for storage
-    const bufferToBase64 = (buf: ArrayBuffer | Uint8Array) =>
-        btoa(String.fromCharCode(...new Uint8Array(buf)));
+    const bufferToBase64 = (buf: ArrayBuffer | Uint8Array) => {
+        const bytes = new Uint8Array(buf);
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return btoa(binary);
+    };
 
     return JSON.stringify({
       v: 1, // version
@@ -96,6 +121,10 @@ export const WalletService = {
   decrypt: async (encryptedBundle: string, password: string): Promise<string> => {
     try {
       const bundle = JSON.parse(encryptedBundle);
+
+      if (!bundle.salt || !bundle.iv || !bundle.data) {
+          throw new Error("Invalid encrypted bundle format");
+      }
 
       const base64ToUint8 = (str: string) =>
         Uint8Array.from(atob(str), c => c.charCodeAt(0));
@@ -114,6 +143,7 @@ export const WalletService = {
 
       return new TextDecoder().decode(decryptedContent);
     } catch (e) {
+      console.error("Decryption error:", e);
       throw new Error("Incorrect Password or Corrupted Data");
     }
   }

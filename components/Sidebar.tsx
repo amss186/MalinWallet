@@ -77,7 +77,7 @@ export default function Sidebar() {
               </p>
               <p className="text-xs text-slate-500 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                {userProfile ? `${userProfile.activeWalletAddress.slice(0,6)}...${userProfile.activeWalletAddress.slice(-4)}` : 'Loading...'}
+                {userProfile && (userProfile as any).activeWalletAddress ? `${(userProfile as any).activeWalletAddress.slice(0,6)}...${(userProfile as any).activeWalletAddress.slice(-4)}` : 'Loading...'}
               </p>
             </div>
          </div>

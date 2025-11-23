@@ -1,5 +1,5 @@
 
-import { Asset } from '../types.ts';
+import { Asset } from '../types';
 
 // Ce service est déprécié pour les mises à jour simulées.
 // Les prix en temps réel doivent provenir d'une API Oracle (Chainlink) ou DEX (0x) intégrée dans Dashboard.
