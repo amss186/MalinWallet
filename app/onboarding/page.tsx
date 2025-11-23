@@ -157,7 +157,7 @@ export default function OnboardingPage() {
             <div className="text-center">
                <h2 className="text-2xl font-bold text-white">Chiffrement du Coffre-fort</h2>
                <p className="text-slate-400 mt-2">
-                 Créez un mot de passe fort pour chiffrer votre clé privée avant qu'elle ne soit sauvegardée dans le cloud.
+                 Créez un mot de passe fort pour chiffrer votre clé privée avant qu&apos;elle soit sauvegardée dans le cloud.
                </p>
             </div>
 
