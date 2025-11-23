@@ -1,0 +1,5 @@
+npm error code EJSONPARSE
+npm error JSON.parse Invalid package.json: JSONParseError: Expected double-quoted property name in JSON at position 576 (line 25 column 3) while parsing near "...merge\": \"^2.2.1\",\n  },\n  \"overrides\": {\n..."
+npm error JSON.parse Failed to parse JSON data.
+npm error JSON.parse Note: package.json must be actual JSON, not just JavaScript.
+npm error A complete log of this run can be found in: /home/jules/.npm/_logs/2025-11-23T12_30_22_292Z-debug-0.log

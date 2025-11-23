@@ -1,0 +1,16 @@
+
+> malin-wallet@1.0.0 test
+> jest
+
+● Validation Error:
+
+  Preset ts-jest not found relative to rootDir /app.
+
+  Configuration Documentation:
+  https://jestjs.io/docs/configuration
+
+npm notice
+npm notice New patch version of npm available! 11.6.2 -> 11.6.3
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.6.3
+npm notice To update run: npm install -g npm@11.6.3
+npm notice
