@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
+import { createUserWithEmailAndPassword, sendEmailVerification, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useRecaptcha } from '@/lib/hooks/useRecaptcha';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Sparkles, Loader2, Chrome, Mail, ArrowRight } from 'lucide-react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -15,6 +15,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPass, setConfirmPass] = useState('');
   const [loading, setLoading] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false); // New State
   const { verify } = useRecaptcha();
   const router = useRouter();
 
@@ -36,8 +37,7 @@ export default function RegisterPage() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       await sendEmailVerification(userCredential.user);
-      toast.success("Compte créé ! Veuillez vérifier votre email.");
-      router.push('/onboarding');
+      setVerificationSent(true); // Switch UI
     } catch (error: any) {
       toast.error("Erreur: " + error.message);
     } finally {
@@ -45,9 +45,42 @@ export default function RegisterPage() {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    try {
+        const provider = new GoogleAuthProvider();
+        await signInWithPopup(auth, provider);
+        toast.success("Compte créé avec Google !");
+        router.push('/onboarding');
+    } catch (error: any) {
+        toast.error("Erreur Google: " + error.message);
+    }
+  };
+
+  if (verificationSent) {
+      return (
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl text-center">
+            <ToastContainer theme="dark" position="top-center" />
+            <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6 ring-1 ring-green-500/30">
+                <Mail className="w-8 h-8 text-green-400" />
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">Vérifiez votre email</h2>
+            <p className="text-slate-400 mb-6">
+                Un lien de confirmation a été envoyé à <strong>{email}</strong>.
+                Veuillez cliquer dessus pour activer votre compte.
+            </p>
+            <button
+                onClick={() => router.push('/login')}
+                className="w-full bg-white/10 hover:bg-white/20 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2"
+            >
+                Retour à la connexion <ArrowRight size={18} />
+            </button>
+        </div>
+      );
+  }
+
   return (
     <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
-      <ToastContainer theme="dark" />
+      <ToastContainer theme="dark" position="top-center" />
       <div className="flex flex-col items-center mb-8">
         <div className="w-12 h-12 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg mb-4">
           <Sparkles className="text-white" size={24} />
@@ -56,7 +89,23 @@ export default function RegisterPage() {
         <p className="text-slate-400">Créez votre portefeuille sécurisé</p>
       </div>
 
-      <form onSubmit={handleRegister} className="space-y-4">
+      <div className="space-y-4">
+        <button
+            onClick={handleGoogleLogin}
+            className="w-full bg-white text-slate-900 font-bold py-3.5 rounded-xl transition hover:bg-slate-200 flex items-center justify-center gap-2"
+        >
+            <Chrome size={20} />
+            S&apos;inscrire avec Google
+        </button>
+
+        <div className="flex items-center gap-4">
+            <div className="h-px bg-white/10 flex-1"></div>
+            <span className="text-slate-500 text-sm">ou email</span>
+            <div className="h-px bg-white/10 flex-1"></div>
+        </div>
+      </div>
+
+      <form onSubmit={handleRegister} className="space-y-4 mt-4">
         <div>
           <label className="block text-sm font-medium text-slate-300 mb-1">Email</label>
           <input

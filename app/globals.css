@@ -5,6 +5,10 @@
 :root {
   --background: #020617;
   --foreground: #ffffff;
+  --toastify-color-dark: #0f172a;
+  --toastify-color-light: #ffffff;
+  --toastify-text-color-dark: #f8fafc;
+  --toastify-text-color-light: #f8fafc;
 }
 
 body {
@@ -26,4 +30,45 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #475569;
+}
+
+/* Custom Toastify Styles for Beautiful Notifications */
+.Toastify__toast-container {
+  padding: 1rem;
+}
+
+.Toastify__toast {
+  border-radius: 1rem !important;
+  background: rgba(15, 23, 42, 0.9) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5) !important;
+  color: white !important;
+  font-family: inherit !important;
+  padding: 1rem !important;
+  margin-bottom: 1rem !important;
+}
+
+.Toastify__toast--success {
+  border-left: 4px solid #10b981 !important;
+}
+
+.Toastify__toast--error {
+  border-left: 4px solid #ef4444 !important;
+}
+
+.Toastify__toast--warning {
+  border-left: 4px solid #f59e0b !important;
+}
+
+.Toastify__toast--info {
+  border-left: 4px solid #6366f1 !important;
+}
+
+.Toastify__close-button {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.Toastify__progress-bar {
+  background: linear-gradient(to right, #6366f1, #a855f7) !important;
 }
