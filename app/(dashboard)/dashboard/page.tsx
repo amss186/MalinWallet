@@ -44,7 +44,7 @@ export default function DashboardPage() {
             price: 0, // Need price feed later
             chainId: 1,
             logoUrl: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png'
-          },
+          };
 
           const allAssets = [ethAsset, ...tokens];
           setAssets(allAssets);
