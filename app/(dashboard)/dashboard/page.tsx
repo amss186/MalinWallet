@@ -26,7 +26,7 @@ export default function DashboardPage() {
         if (snap.exists()) {
           const userData = snap.data() as UserProfile;
           setUser(userData);
-          const address = userData.activeWalletAddress;
+          const address = userData.activeWalletId
 
           // 2. Fetch Real Chain Data
           // Native ETH
