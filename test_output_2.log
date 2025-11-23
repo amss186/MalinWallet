@@ -1,0 +1,25 @@
+
+> malin-wallet@1.0.0 test
+> jest
+
+FAIL __tests__/App.test.tsx
+  ● Test suite failed to run
+
+    Cannot find module '../component/AIChat' from '__tests__/App.test.tsx'
+
+      23 |
+      24 | // Mock child components
+    > 25 | jest.mock('../component/AIChat', () => () => <div data-testid="aichat">AIChat</div>);
+         |      ^
+      26 | jest.mock('../component/Dashboard', () => ({ onSend }: any) => (
+      27 |   <div>
+      28 |     Dashboard
+
+      at Resolver._throwModNotFoundError (node_modules/jest-resolve/build/resolver.js:427:11)
+      at Object.<anonymous> (__tests__/App.test.tsx:25:6)
+
+Test Suites: 1 failed, 1 total
+Tests:       0 total
+Snapshots:   0 total
+Time:        1.207 s
+Ran all test suites.
