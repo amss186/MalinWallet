@@ -2,14 +2,25 @@
 
 import React, { useState, useEffect } from 'react';
 import { auth, db } from '@/lib/firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, arrayUnion } from 'firebase/firestore';
 import { WalletService } from '@/lib/wallet';
 import { useRouter } from 'next/navigation';
 import { Shield, CheckCircle, Copy, AlertTriangle, Eye, EyeOff, Loader2, ChevronRight, Lock, Key, Download } from 'lucide-react';
 import { toast, ToastContainer } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
 import { onAuthStateChanged } from 'firebase/auth';
+import { ethers } from 'ethers';
 import 'react-toastify/dist/ReactToastify.css';
+
+function generateUUID() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
 
 export default function OnboardingPage() {
   const [step, setStep] = useState(1);
@@ -65,68 +76,20 @@ export default function OnboardingPage() {
       if (!importInput) return;
       setIsGenerating(true);
       try {
-          // Check if input is Mnemonic or Private Key
           let wallet;
-          if (importInput.includes(' ')) {
+          // Check if input looks like a mnemonic (contains spaces)
+          if (importInput.trim().includes(' ')) {
               // Assume Mnemonic
               wallet = WalletService.recoverWallet(importInput);
               setMnemonic(importInput); // Store mnemonic if available
           } else {
               // Assume Private Key
-              // Private Key recovery usually doesn't give mnemonic back
-              // We need to implement private key to address derivation if not in WalletService
-              // WalletService.recoverWallet only handles mnemonic based on current file.
-              // Let's check WalletService capabilities.
-              // It seems recoverWallet is only for mnemonic.
-              // We need to use ethers directly or extend WalletService.
-              // For now, I'll assume valid mnemonic or add a quick check.
-
-              // Actually, I should probably handle Private Key import too.
-              // But WalletService.recoverWallet takes mnemonic.
-              // Let's assume for now we only support Mnemonic if the service is limited,
-              // BUT the user asked for "Private Key" too.
-              // I will use a simple heuristic: if it has spaces -> mnemonic.
-              // If not -> private key.
-
-              // I'll need to use ethers from 'ethers' inside the component if Service doesn't support it,
-              // or just rely on the fact that `WalletService.recoverWallet` might fail.
-
-              // Wait, I can't modify WalletService in this step easily without reading it again.
-              // I'll assume I can just use ethers.Wallet(privateKey) if I imported ethers.
-              // But I didn't import ethers here.
-              // Let's try to stick to Mnemonic if possible or...
-
-              // No, I must support Private Key.
-              // I'll update the component to import ethers or handling it.
-              // Actually, I can just try to use `WalletService`? No.
-
-              // Let's modify WalletService quickly? No, I am in "OnboardingPage" step.
-              // I will use a trick: `WalletService` is just a wrapper.
-              // I will allow the user to input ONLY mnemonic for now if it's easier,
-              // or I'll add logic here.
-
-              // User requirement: "si il veux la cle privé qu’il le fasse aussi"
-
-              // I will handle it in the component by importing ethers dynamically if needed or just assuming it's a mnemonic for now?
-              // No, that fails the requirement.
-
-              // I'll modify the `WalletService` in the next step or right now?
-              // I can't edit 2 files in one tool call easily.
-              // I will add the logic here using a dynamic import or just fail if it's not mnemonic.
-
-              // Actually, I can import { ethers } from 'ethers'; at the top!
-              // It's not imported.
-
-              // Let's just handle Mnemonic for this step and add Private Key support
-              // by modifying WalletService in a subsequent step if needed?
-              // No, I should do it right.
-
-              // I will add `import { ethers } from 'ethers';` to the top of this file.
-              // It is available in the project.
-
-              const { ethers } = await import('ethers');
-              const w = new ethers.Wallet(importInput);
-              wallet = { address: w.address, privateKey: w.privateKey, mnemonic: null };
+              try {
+                  const w = new ethers.Wallet(importInput);
+                  wallet = { address: w.address, privateKey: w.privateKey, mnemonic: null };
+              } catch (e) {
+                  throw new Error("Format de clé privée invalide");
+              }
           }
 
           if (wallet) {
@@ -182,7 +145,7 @@ export default function OnboardingPage() {
       const userRef = doc(db, "users", auth.currentUser.uid);
 
       const walletData = {
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         name: 'Compte Principal',
         address: address,
         encryptedPrivateKey: encryptedKey,
@@ -192,9 +155,9 @@ export default function OnboardingPage() {
 
       await setDoc(userRef, {
         uid: auth.currentUser.uid,
-        email: auth.currentUser.email,
+        email: auth.currentUser.email || "", // Ensure email is not undefined
         updatedAt: new Date().toISOString(),
-        wallets: [walletData],
+        wallets: arrayUnion(walletData),
         activeWalletAddress: address,
         settings: { currency: 'USD', language: 'fr' }
       }, { merge: true });

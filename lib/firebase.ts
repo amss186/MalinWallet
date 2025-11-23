@@ -15,7 +15,16 @@ import {
   User,
   Auth, 
 } from "firebase/auth";
-import { getFirestore, doc, setDoc, getDoc, Firestore } from "firebase/firestore";
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  getDoc,
+  Firestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager
+} from "firebase/firestore";
 import { getAnalytics, isSupported, Analytics } from "firebase/analytics";
 
 
@@ -57,13 +66,22 @@ try {
     }
     app = initializeApp(firebaseConfig);
     console.log("Firebase Init: App initialized successfully.");
+
+    // Initialisation explicite de Firestore avec configuration
+    db = initializeFirestore(app, {
+      localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()}),
+      experimentalAutoDetectLongPolling: true,
+    });
   } else {
     app = getApp(); // Récupère l'application Firebase existante
     console.log("Firebase Init: Using existing app instance.");
+    db = getFirestore(app); // Note: Si l'app existe déjà, on récupère l'instance par défaut
+    // Si on voulait forcer la config sur une app existante, c'est plus compliqué car initializeFirestore ne peut être appelé qu'une fois.
+    // Mais dans un contexte SPA/Next.js, le premier appel (length === 0) est celui qui compte.
   }
   
   auth = getAuth(app);
-  db = getFirestore(app);
+  // db = getFirestore(app); // REMPLACÉ par initializeFirestore ci-dessus
   googleProvider = new GoogleAuthProvider(); // Initialisation après avoir initialisé l'app
   
   console.log("Firebase Init: Auth and Firestore instances obtained.");
