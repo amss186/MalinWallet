@@ -72,6 +72,9 @@ export interface Asset {
   color: string;
   isCustom?: boolean;
   contractAddress?: string;
+  decimals?: number;
+  logoUrl?: string;
+  chainId?: number;
 }
 
 export interface NFT {

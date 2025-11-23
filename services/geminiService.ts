@@ -1,7 +1,7 @@
 
 import { GoogleGenAI, Tool, Type } from "@google/genai";
-import { INITIAL_SYSTEM_INSTRUCTION } from '../constants.ts';
-import { Asset, Quiz } from '../types.ts';
+import { INITIAL_SYSTEM_INSTRUCTION } from '../constants';
+import { Asset, Quiz } from '../types';
 
 const getApiKey = () => {
   if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
