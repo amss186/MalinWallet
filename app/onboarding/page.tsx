@@ -39,13 +39,28 @@ export default function OnboardingPage() {
 
   const router = useRouter();
 
-  // Check Authentication
+  // Check Authentication & Existing Wallet
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) {
         router.push('/login');
       } else {
         setUserChecked(true);
+        // Check if user already has a wallet
+        const uid = user.uid;
+        const storageKey = `malin_user_${uid}`;
+        const storedData = localStorage.getItem(storageKey);
+
+        if (storedData) {
+            try {
+                const userData = JSON.parse(storedData);
+                if (userData.wallets && userData.wallets.length > 0) {
+                    router.push('/dashboard');
+                }
+            } catch (e) {
+                // corrupted data, stay here to fix/reset
+            }
+        }
       }
     });
     return () => unsubscribe();
@@ -53,7 +68,7 @@ export default function OnboardingPage() {
 
   const generateWallet = async () => {
     setIsGenerating(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
+    // Removed artificial delay
 
     try {
       const wallet = WalletService.createWallet();
@@ -184,7 +199,7 @@ export default function OnboardingPage() {
       setStep(4);
       setTimeout(() => {
         router.push('/dashboard');
-      }, 2000);
+      }, 1500); // reduced delay
 
     } catch (e: any) {
       console.error(e);
