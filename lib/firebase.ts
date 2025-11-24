@@ -22,8 +22,6 @@ import {
   getDoc,
   Firestore,
   initializeFirestore,
-  persistentLocalCache,
-  persistentMultipleTabManager
 } from "firebase/firestore";
 import { getAnalytics, isSupported, Analytics } from "firebase/analytics";
 
@@ -56,39 +54,44 @@ let googleProvider: GoogleAuthProvider; // Déclarez la variable ici pour la ren
 
 try {
   console.log("Firebase Init: Checking existing apps...");
+
+  // Debug log to verify config presence (safe logging)
+  console.log("Firebase Config Status:", {
+    apiKey: firebaseConfig.apiKey ? "Present" : "Missing",
+    projectId: firebaseConfig.projectId ? "Present" : "Missing",
+    authDomain: firebaseConfig.authDomain ? "Present" : "Missing"
+  });
+
   if (getApps().length === 0) {
-    console.log("Firebase Init: No existing app found. Initializing with config:", firebaseConfig);
+    console.log("Firebase Init: No existing app found. Initializing...");
     // Vérification de la configuration avant l'initialisation
     if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
       console.error("Firebase Init Error: Missing critical config values (apiKey or projectId). Check your .env.local or Vercel Environment Variables.");
-      // Optionnel: Vous pouvez lancer une erreur ici pour bloquer l'application
-      // throw new Error("Firebase configuration is incomplete.");
     }
     app = initializeApp(firebaseConfig);
     console.log("Firebase Init: App initialized successfully.");
 
-    // Initialisation explicite de Firestore avec configuration
+    // Initialisation explicite de Firestore avec configuration Long Polling forcée
+    // Ceci est pour résoudre les erreurs "Unknown SID" (Error 400) souvent dues aux proxys ou connexions instables.
+    // On désactive le cache persistant pour l'instant pour isoler le problème.
     db = initializeFirestore(app, {
-      localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()}),
-      experimentalAutoDetectLongPolling: true,
-    });
+      experimentalForceLongPolling: true,
+    } as any);
+    console.log("Firebase Init: Firestore initialized with experimentalForceLongPolling.");
+
   } else {
     app = getApp(); // Récupère l'application Firebase existante
     console.log("Firebase Init: Using existing app instance.");
-    db = getFirestore(app); // Note: Si l'app existe déjà, on récupère l'instance par défaut
-    // Si on voulait forcer la config sur une app existante, c'est plus compliqué car initializeFirestore ne peut être appelé qu'une fois.
-    // Mais dans un contexte SPA/Next.js, le premier appel (length === 0) est celui qui compte.
+    db = getFirestore(app);
   }
   
   auth = getAuth(app);
-  // db = getFirestore(app); // REMPLACÉ par initializeFirestore ci-dessus
   googleProvider = new GoogleAuthProvider(); // Initialisation après avoir initialisé l'app
   
   console.log("Firebase Init: Auth and Firestore instances obtained.");
 
 } catch (e) {
   console.error("Firebase Initialization Error caught:", e);
-  // Re-lancer l'erreur si elle est critique
   throw new Error("Failed to initialize Firebase. Check console for details.");
 }
 
