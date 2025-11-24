@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { signInWithEmailAndPassword, sendPasswordResetEmail, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import React, { useState, useEffect } from 'react';
+import { signInWithEmailAndPassword, sendPasswordResetEmail, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useRecaptcha } from '@/lib/hooks/useRecaptcha';
 import Link from 'next/link';
@@ -14,8 +14,43 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const { verify } = useRecaptcha();
   const router = useRouter();
+
+  // Check if already logged in
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+        if (user) {
+            // Check for wallet
+            const uid = user.uid;
+            const storageKey = `malin_user_${uid}`;
+            const storedData = localStorage.getItem(storageKey);
+
+            if (storedData) {
+                // Has wallet -> Dashboard
+                router.push('/dashboard');
+            } else {
+                // No wallet -> Onboarding
+                router.push('/onboarding');
+            }
+        }
+        setCheckingAuth(false);
+    });
+    return () => unsubscribe();
+  }, [router]);
+
+  const handleSuccess = (user: any) => {
+      const uid = user.uid;
+      const storageKey = `malin_user_${uid}`;
+      const storedData = localStorage.getItem(storageKey);
+
+      if (storedData) {
+          router.push('/dashboard');
+      } else {
+          router.push('/onboarding');
+      }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,20 +70,19 @@ export default function LoginPage() {
         // We let them through to check onboarding status, but usually we'd restrict.
       }
       toast.success("Connexion réussie");
-      router.push('/onboarding');
+      handleSuccess(userCredential.user);
     } catch (error: any) {
       toast.error("Erreur: " + error.message);
-    } finally {
-      setLoading(false);
+      setLoading(false); // Only stop loading on error, otherwise we are redirecting
     }
   };
 
   const handleGoogleLogin = async () => {
     try {
         const provider = new GoogleAuthProvider();
-        await signInWithPopup(auth, provider);
+        const result = await signInWithPopup(auth, provider);
         toast.success("Connexion Google réussie");
-        router.push('/onboarding');
+        handleSuccess(result.user);
     } catch (error: any) {
         toast.error("Erreur Google: " + error.message);
     }
@@ -63,6 +97,14 @@ export default function LoginPage() {
       toast.error("Erreur lors de l'envoi");
     }
   };
+
+  if (checkingAuth) {
+      return (
+        <div className="min-h-screen bg-[#020617] flex items-center justify-center">
+            <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
+        </div>
+      );
+  }
 
   return (
     <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
