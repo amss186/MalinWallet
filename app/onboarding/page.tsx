@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { auth, db } from '@/lib/firebase';
-import { doc, setDoc, arrayUnion } from 'firebase/firestore';
+import { auth } from '@/lib/firebase'; // Keep auth for UID
 import { WalletService } from '@/lib/wallet';
 import { useRouter } from 'next/navigation';
 import { Shield, CheckCircle, Copy, AlertTriangle, Eye, EyeOff, Loader2, ChevronRight, Lock, Key, Download } from 'lucide-react';
@@ -11,6 +10,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { onAuthStateChanged } from 'firebase/auth';
 import { ethers } from 'ethers';
 import 'react-toastify/dist/ReactToastify.css';
+import { UserProfile, WalletAccount } from '@/types'; // Import types
+
+function generateUUID() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
 
 function generateUUID() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -34,7 +44,7 @@ export default function OnboardingPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [userChecked, setUserChecked] = useState(false);
-  const [importMode, setImportMode] = useState(false); // New state for import
+  const [importMode, setImportMode] = useState(false);
   const [importInput, setImportInput] = useState('');
 
   const router = useRouter();
@@ -77,13 +87,10 @@ export default function OnboardingPage() {
       setIsGenerating(true);
       try {
           let wallet;
-          // Check if input looks like a mnemonic (contains spaces)
           if (importInput.trim().includes(' ')) {
-              // Assume Mnemonic
               wallet = WalletService.recoverWallet(importInput);
-              setMnemonic(importInput); // Store mnemonic if available
+              setMnemonic(importInput);
           } else {
-              // Assume Private Key
               try {
                   const w = new ethers.Wallet(importInput);
                   wallet = { address: w.address, privateKey: w.privateKey, mnemonic: null };
@@ -95,7 +102,7 @@ export default function OnboardingPage() {
           if (wallet) {
               setPrivateKey(wallet.privateKey);
               setAddress(wallet.address);
-              setStep(3); // Skip step 2 (Display Seed) since they already know it
+              setStep(3);
           }
       } catch (e: any) {
           toast.error("Clé invalide: " + e.message);
@@ -142,25 +149,47 @@ export default function OnboardingPage() {
         throw new Error("Échec du chiffrement: " + encError.message);
       }
 
-      const userRef = doc(db, "users", auth.currentUser.uid);
+      // --- LOCAL STORAGE LOGIC START ---
+      const uid = auth.currentUser.uid;
+      const storageKey = `malin_user_${uid}`;
 
-      const walletData = {
-        id: generateUUID(),
+      // Load existing user data or create new
+      let userData: UserProfile;
+      const storedData = localStorage.getItem(storageKey);
+
+      if (storedData) {
+        try {
+          userData = JSON.parse(storedData);
+        } catch (e) {
+          console.error("Error parsing local storage", e);
+          // Fallback if corrupt
+          userData = createNewUserProfile(uid, auth.currentUser.email || "");
+        }
+      } else {
+        userData = createNewUserProfile(uid, auth.currentUser.email || "");
+      }
+
+      const walletId = generateUUID();
+      const walletData: WalletAccount = {
+        id: walletId,
         name: 'Compte Principal',
         address: address,
-        encryptedPrivateKey: encryptedKey,
         color: '#6366f1',
-        createdAt: new Date().toISOString()
+        privateKeyEncrypted: encryptedKey // Matching types.ts
       };
 
-      await setDoc(userRef, {
-        uid: auth.currentUser.uid,
-        email: auth.currentUser.email || "", // Ensure email is not undefined
-        updatedAt: new Date().toISOString(),
-        wallets: arrayUnion(walletData),
-        activeWalletAddress: address,
-        settings: { currency: 'USD', language: 'fr' }
-      }, { merge: true });
+      // Add wallet
+      userData.wallets.push(walletData);
+      // Set active if none
+      if (!userData.activeWalletId) {
+        userData.activeWalletId = walletId;
+      }
+
+      // Save back to LocalStorage
+      localStorage.setItem(storageKey, JSON.stringify(userData));
+
+      console.log("Wallet saved to LocalStorage successfully");
+      // --- LOCAL STORAGE LOGIC END ---
 
       setStep(4);
       setTimeout(() => {
@@ -174,6 +203,22 @@ export default function OnboardingPage() {
       setIsSaving(false);
     }
   };
+
+  // Helper to create initial structure
+  const createNewUserProfile = (uid: string, email: string): UserProfile => ({
+    id: uid,
+    uid: uid,
+    email: email,
+    name: email.split('@')[0] || 'User',
+    currency: 'USD',
+    language: 'fr',
+    createdAt: new Date().toISOString(),
+    wallets: [],
+    activeWalletId: '',
+    contacts: [],
+    dappHistory: [],
+    favorites: []
+  });
 
   if (!userChecked) {
     return (
@@ -392,7 +437,7 @@ export default function OnboardingPage() {
                  </div>
                  <h2 className="text-2xl font-bold text-white">Chiffrez votre Clé Privée</h2>
                  <p className="text-slate-400 mt-2 text-sm max-w-md mx-auto">
-                   Ce mot de passe servira à chiffrer votre clé privée avant qu&apos;elle ne soit envoyée sur nos serveurs. Nous ne pouvons pas le réinitialiser.
+                   Ce mot de passe servira à chiffrer votre clé privée avant qu&apos;elle ne soit envoyée sur nos serveurs (sauvegarde locale dans ce mode).
                  </p>
               </div>
 
@@ -464,7 +509,7 @@ export default function OnboardingPage() {
                 <CheckCircle className="w-12 h-12 text-green-500" />
               </div>
               <h2 className="text-3xl font-bold text-white mb-2">Tout est prêt !</h2>
-              <p className="text-slate-400">Votre portefeuille a été créé et chiffré avec succès.</p>
+              <p className="text-slate-400">Votre portefeuille a été créé et stocké localement.</p>
               <p className="text-slate-500 text-sm mt-4">Redirection vers votre tableau de bord...</p>
               <div className="mt-8 flex justify-center">
                 <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />

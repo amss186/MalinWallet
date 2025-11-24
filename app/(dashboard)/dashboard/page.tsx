@@ -2,9 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { ChainService } from '@/lib/chain';
-import { auth, db } from '@/lib/firebase';
-import { doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
-import { Asset, UserProfile } from '@/types';
+import { auth } from '@/lib/firebase';
+import { Asset, UserProfile, WalletAccount } from '@/types';
 import { WalletService } from '@/lib/wallet';
 import { Wallet, Send, ArrowDownLeft, RefreshCw, Plus, Download, X } from 'lucide-react';
 import { toast, ToastContainer } from 'react-toastify';
@@ -23,13 +22,17 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!auth.currentUser) return;
+      // Small delay to ensure auth is ready or wait for onAuthStateChanged wrapper if present in parent
+      // Here we assume parent layout handles auth protection or we check it here
+      if (!auth.currentUser) return; // Might need to wait for auth state
 
       try {
-        const userRef = doc(db, "users", auth.currentUser.uid);
-        const snap = await getDoc(userRef);
-        if (snap.exists()) {
-          const userData = snap.data() as UserProfile;
+        const uid = auth.currentUser.uid;
+        const storageKey = `malin_user_${uid}`;
+        const storedData = localStorage.getItem(storageKey);
+
+        if (storedData) {
+          const userData = JSON.parse(storedData) as UserProfile;
           setUser(userData);
 
           let address = "";
@@ -50,7 +53,7 @@ export default function DashboardPage() {
                 symbol: 'ETH',
                 name: 'Ethereum',
                 balance: parseFloat(ethBal),
-                price: 2200,
+                price: 2200, // Hardcoded for demo/simplicity as in original
                 change24h: 0,
                 chain: 'ETH',
                 color: '#627eea',
@@ -60,6 +63,9 @@ export default function DashboardPage() {
              setAssets([ethAsset]);
              setTotalBalance(parseFloat(ethBal) * 2200);
           }
+        } else {
+            // No local data found
+            console.log("No local user data found for this UID.");
         }
       } catch (e) {
         console.error(e);
@@ -69,7 +75,12 @@ export default function DashboardPage() {
       }
     };
 
-    fetchData();
+    // Trigger fetch on mount, but check auth
+    // If auth is not ready immediately, we might miss it.
+    // Ideally we should subscribe to auth state changes or retry.
+    // For now, let's just wait a bit or check if we can hook into auth.
+    // Since this is a client component, typical pattern is:
+    setTimeout(fetchData, 500); // Simple fallback delay
   }, []);
 
   const handleImportWallet = async () => {
@@ -100,26 +111,51 @@ export default function DashboardPage() {
         // 2. Encrypt Private Key
         const encryptedKey = await WalletService.encrypt(wallet.privateKey, encryptionPassword);
 
-        // 3. Save to Firestore
-        const userRef = doc(db, "users", auth.currentUser!.uid);
-        const newWallet = {
+        // 3. Save to LocalStorage
+        if (!auth.currentUser) throw new Error("User not authenticated");
+
+        const uid = auth.currentUser.uid;
+        const storageKey = `malin_user_${uid}`;
+        const storedData = localStorage.getItem(storageKey);
+
+        let userData: UserProfile;
+        if (storedData) {
+             userData = JSON.parse(storedData);
+        } else {
+             // Should not happen on dashboard if onboarding passed, but safety first
+             userData = {
+                id: uid,
+                uid: uid,
+                email: auth.currentUser.email || "",
+                name: 'User',
+                currency: 'USD',
+                language: 'fr',
+                createdAt: new Date().toISOString(),
+                wallets: [],
+                activeWalletId: '',
+                contacts: [],
+                dappHistory: [],
+                favorites: []
+             };
+        }
+
+        const newWallet: WalletAccount = {
             id: crypto.randomUUID(),
-            name: `Wallet Importé ${user?.wallets.length ? user.wallets.length + 1 : 1}`,
+            name: `Wallet Importé ${userData.wallets.length ? userData.wallets.length + 1 : 1}`,
             address: wallet.address,
-            encryptedPrivateKey: encryptedKey,
             color: '#10b981', // Emerald for imported
-            createdAt: new Date().toISOString()
+            privateKeyEncrypted: encryptedKey // Match types.ts
         };
 
-        await updateDoc(userRef, {
-            wallets: arrayUnion(newWallet)
-        });
+        userData.wallets.push(newWallet);
+        // Save back
+        localStorage.setItem(storageKey, JSON.stringify(userData));
 
         toast.success("Wallet importé avec succès !");
         setShowImportModal(false);
         setImportInput('');
         setEncryptionPassword('');
-        // Reload page to reflect changes (simple way)
+        // Reload page to reflect changes
         window.location.reload();
 
     } catch (e: any) {
@@ -234,12 +270,9 @@ export default function DashboardPage() {
                 <div key={idx} className="flex items-center justify-between p-4 border-b border-white/5 hover:bg-white/5 transition last:border-0">
                    <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center overflow-hidden relative">
-                        {/* Fixed img tag to Image component */}
                          {asset.contractAddress ? (
                              <span className="font-bold text-indigo-400">{asset.symbol[0]}</span>
                          ) : (
-                             // Fallback for native ETH logo or similar if URL is valid
-                             // Using a simple text fallback if URL logic is complex or invalid
                              <span className="font-bold text-indigo-400">{asset.symbol[0]}</span>
                          )}
                       </div>
