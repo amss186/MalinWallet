@@ -71,7 +71,7 @@ export default function OnboardingPage() {
     // Removed artificial delay
 
     try {
-      const wallet = WalletService.createWallet();
+        const wallet = WalletService.createEVMWallet();
       if (wallet.mnemonic) {
         setMnemonic(wallet.mnemonic);
         setPrivateKey(wallet.privateKey);

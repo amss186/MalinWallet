@@ -47,8 +47,6 @@ export default function Sidebar() {
     { id: 'swap', icon: ArrowRightLeft, label: 'Swap', path: '/swap' },
     { id: 'earn', icon: TrendingUp, label: 'Earn', path: '/earn' },
     { id: 'dapps', icon: Globe, label: 'DApps', path: '/dapps' },
-    { id: 'analytics', icon: BarChart2, label: 'Analytics', path: '/analytics' },
-    { id: 'learn', icon: GraduationCap, label: 'Learn', path: '/learn' },
   ];
 
   return (

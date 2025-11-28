@@ -1,17 +1,16 @@
 import { ethers } from 'ethers';
+import { argon2id } from 'hash-wasm';
+import { Keypair } from '@solana/web3.js';
 
-// Constants for Encryption
 const ALGORITHM = 'AES-GCM';
 const KEY_LENGTH = 256;
-const ITERATIONS = 100000;
-const DIGEST = 'SHA-256';
+const TAG_LENGTH = 128; // bits
 
 export const WalletService = {
   /**
-   * Generates a new Random Wallet (Mnemonic & Private Key)
-   * This happens entirely client-side.
+   * Generates a new Random EVM Wallet
    */
-  createWallet: () => {
+  createEVMWallet: () => {
     try {
         const wallet = ethers.Wallet.createRandom();
         if (!wallet.mnemonic || !wallet.address || !wallet.privateKey) {
@@ -21,14 +20,31 @@ export const WalletService = {
             address: wallet.address,
             privateKey: wallet.privateKey,
             mnemonic: wallet.mnemonic.phrase,
+            type: 'evm'
         };
     } catch (e: any) {
-        throw new Error("Wallet generation failed: " + e.message);
+        throw new Error("EVM Wallet generation failed: " + e.message);
     }
   },
 
   /**
-   * Recovers a wallet from a Mnemonic Phrase
+   * Generates a new Random Solana Wallet
+   */
+  createSolanaWallet: () => {
+    try {
+      const keypair = Keypair.generate();
+      return {
+        address: keypair.publicKey.toBase58(),
+        privateKey: Buffer.from(keypair.secretKey).toString('hex'), // Storing as hex for consistency
+        type: 'solana'
+      };
+    } catch (e: any) {
+      throw new Error("Solana Wallet generation failed: " + e.message);
+    }
+  },
+
+  /**
+   * Recovers a wallet from a Mnemonic Phrase (EVM)
    */
   recoverWallet: (mnemonic: string) => {
     try {
@@ -42,6 +58,8 @@ export const WalletService = {
       return {
         address: wallet.address,
         privateKey: wallet.privateKey,
+        mnemonic: mnemonic,
+        type: 'evm'
       };
     } catch (e) {
       throw new Error("Invalid Seed Phrase");
@@ -49,55 +67,51 @@ export const WalletService = {
   },
 
   /**
-   * Derives a CryptoKey from a user's password using PBKDF2
+   * Derives a 256-bit Key from a user's password using Argon2id (via WASM)
    */
-  deriveKey: async (password: string, salt: Uint8Array): Promise<CryptoKey> => {
-    if (typeof window === "undefined" || !window.crypto || !window.crypto.subtle) {
-        throw new Error("Crypto API not supported in this environment");
-    }
+  deriveKey: async (password: string, salt: Uint8Array): Promise<Uint8Array> => {
+    const derivedHex = await argon2id({
+      password,
+      salt,
+      parallelism: 1,
+      iterations: 256,
+      memorySize: 512,
+      hashLength: 32,
+      outputType: 'hex'
+    });
 
-    const enc = new TextEncoder();
-    const keyMaterial = await window.crypto.subtle.importKey(
-      "raw",
-      enc.encode(password),
-      { name: "PBKDF2" },
-      false,
-      ["deriveKey"]
-    );
-
-    return window.crypto.subtle.deriveKey(
-      {
-        name: "PBKDF2",
-        salt: salt as any,
-        iterations: ITERATIONS,
-        hash: DIGEST
-      },
-      keyMaterial,
-      { name: ALGORITHM, length: KEY_LENGTH },
-      false,
-      ["encrypt", "decrypt"]
+    return new Uint8Array(
+      derivedHex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))
     );
   },
 
   /**
-   * Encrypts sensitive data (Private Key/Seed)
-   * Returns a JSON string containing the encrypted data, IV, and Salt.
+   * Encrypts sensitive data using AES-256-GCM with Argon2id derived key
    */
   encrypt: async (data: string, password: string): Promise<string> => {
     if (!data || !password) throw new Error("Missing data or password");
 
     const salt = window.crypto.getRandomValues(new Uint8Array(16));
     const iv = window.crypto.getRandomValues(new Uint8Array(12));
-    const key = await WalletService.deriveKey(password, salt);
+
+    const keyBytes = await WalletService.deriveKey(password, salt);
+
+    const key = await window.crypto.subtle.importKey(
+      "raw",
+      keyBytes.buffer as ArrayBuffer, // Cast to satisfy TS if needed, or create slice
+      { name: "AES-GCM" },
+      false,
+      ["encrypt", "decrypt"]
+    );
+
     const enc = new TextEncoder();
 
     const encryptedContent = await window.crypto.subtle.encrypt(
-      { name: ALGORITHM, iv },
+      { name: ALGORITHM, iv, tagLength: TAG_LENGTH },
       key,
       enc.encode(data)
     );
 
-    // Convert buffers to Base64 for storage
     const bufferToBase64 = (buf: ArrayBuffer | Uint8Array) => {
         const bytes = new Uint8Array(buf);
         let binary = '';
@@ -108,7 +122,7 @@ export const WalletService = {
     };
 
     return JSON.stringify({
-      v: 1, // version
+      v: 2,
       salt: bufferToBase64(salt),
       iv: bufferToBase64(iv),
       data: bufferToBase64(encryptedContent)
@@ -116,7 +130,7 @@ export const WalletService = {
   },
 
   /**
-   * Decrypts the data using the user's password.
+   * Decrypts the data
    */
   decrypt: async (encryptedBundle: string, password: string): Promise<string> => {
     try {
@@ -133,10 +147,24 @@ export const WalletService = {
       const iv = base64ToUint8(bundle.iv);
       const data = base64ToUint8(bundle.data);
 
-      const key = await WalletService.deriveKey(password, salt);
+      if (bundle.v !== 2) {
+         if (bundle.v === 1) {
+             throw new Error("Legacy wallet format. Please re-import or update.");
+         }
+      }
+
+      const keyBytes = await WalletService.deriveKey(password, salt);
+
+      const key = await window.crypto.subtle.importKey(
+        "raw",
+        keyBytes.buffer as ArrayBuffer,
+        { name: "AES-GCM" },
+        false,
+        ["encrypt", "decrypt"]
+      );
 
       const decryptedContent = await window.crypto.subtle.decrypt(
-        { name: ALGORITHM, iv },
+        { name: ALGORITHM, iv, tagLength: TAG_LENGTH },
         key,
         data
       );
