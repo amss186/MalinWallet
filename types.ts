@@ -18,6 +18,7 @@ export interface WalletAccount {
   address: string;
   color: string;
   privateKeyEncrypted?: string; // Real encrypted storage
+  type?: 'evm' | 'solana';
 }
 
 export interface DAppHistoryItem {
