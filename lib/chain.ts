@@ -4,10 +4,10 @@ import { ethers } from 'ethers';
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 const ALCHEMY_KEY = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
-// On retire les clés privées d'ici, elles sont gérées côté serveur ou proxy
 const LIFI_KEY = process.env.NEXT_PUBLIC_LIFI_API_KEY;
+const ZEROX_KEY = process.env.NEXT_PUBLIC_ZEROX_API_KEY; // Ajouté car utilisé dans getZeroXQuote
 
-// RPC Solana public (ou met ton RPC Helius si tu en as un)
+// RPC Solana public
 const SOLANA_RPC = "https://api.mainnet-beta.solana.com";
 
 const NETWORKS = {
@@ -34,7 +34,6 @@ export const ChainService = {
   getNativeBalance: async (address: string, chainId: number = 1): Promise<string> => {
     try {
       if (!address) return "0.0";
-      // Utilisation directe d'axios pour éviter d'instancier un provider lourd si pas nécessaire
       const response = await axios.post(getRpcUrl(chainId), {
         jsonrpc: "2.0",
         id: 1,
@@ -53,8 +52,7 @@ export const ChainService = {
   },
 
   /**
-   * 2. SOLANA BALANCE (NOUVEAU)
-   * Permet d'afficher le solde SOL
+   * 2. SOLANA BALANCE
    */
   getSolanaBalance: async (address: string): Promise<string> => {
     try {
@@ -87,44 +85,42 @@ export const ChainService = {
       const tokenBalances = response.data.result?.tokenBalances || [];
       const assets: Asset[] = [];
 
-      // Optimisation : On filtre les soldes à 0 pour éviter les requêtes inutiles
+      // Optimisation : On filtre les poussières et on limite à 10 pour la vitesse
       const activeTokens = tokenBalances.filter((t: any) => 
         t.tokenBalance !== "0x0000000000000000000000000000000000000000000000000000000000000000"
-      );
+      ).slice(0, 10);
 
-      // Pour éviter de bloquer l'app mobile, on limite aux 10 premiers tokens pour l'instant
-      // Dans le futur : ajouter une pagination
-      for (const token of activeTokens.slice(0, 10)) {
+      for (const token of activeTokens) {
         try {
             const metadataRes = await axios.post(baseUrl, {
-            jsonrpc: "2.0",
-            method: "alchemy_getTokenMetadata",
-            params: [token.contractAddress]
+              jsonrpc: "2.0",
+              method: "alchemy_getTokenMetadata",
+              params: [token.contractAddress]
             });
 
             const meta = metadataRes.data.result;
             if (meta && meta.decimals) {
-            const balance = parseFloat(ethers.formatUnits(token.tokenBalance, meta.decimals));
-            // On n'ajoute que si le solde est positif
-            if (balance > 0) {
-                assets.push({
+              const balance = parseFloat(ethers.formatUnits(token.tokenBalance, meta.decimals));
+              if (balance > 0) {
+                  assets.push({
                     id: token.contractAddress,
                     color: '#ccc',
                     change24h: 0,
-                    chain: chainId === 137 ? 'POLYGON' : 'ETH',
+                    // --- 🔥 LE FIX EST ICI : on force le type avec 'as any' 🔥 ---
+                    chain: (chainId === 137 ? 'POLYGON' : 'ETH') as any, 
                     symbol: meta.symbol || 'UNK',
                     name: meta.name || 'Unknown',
                     balance: balance,
                     decimals: meta.decimals,
-                    price: 0, // Sera mis à jour par le composant UI via CoinGecko
+                    price: 0, 
                     contractAddress: token.contractAddress,
                     logoUrl: meta.logo,
                     chainId: chainId
-                });
-            }
+                  });
+              }
             }
         } catch (err) {
-            console.warn("Failed to fetch metadata for", token.contractAddress);
+            console.warn("Meta error", err);
         }
       }
       return assets;
@@ -135,12 +131,11 @@ export const ChainService = {
   },
 
   /**
-   * 4. SWAP QUOTE (MONÉTISÉ)
-   * Redirige vers notre Proxy API pour injecter les frais (1%)
+   * 4. SWAP QUOTE (Via Proxy pour Monétisation)
    */
   getZeroXQuote: async (sellToken: string, buyToken: string, amount: string) => {
      try {
-       // IMPORTANT : On appelle notre propre route API, pas 0x directement
+       // On passe par NOTRE proxy pour injecter les frais
        const url = `/api/proxy/0x?sellToken=${sellToken}&buyToken=${buyToken}&sellAmount=${amount}`;
        const response = await axios.get(url);
        return response.data;
@@ -151,7 +146,7 @@ export const ChainService = {
   },
 
   /**
-   * 5. LiFi Quote (Cross-Chain)
+   * 5. LiFi Quote
    */
   getLiFiQuote: async (fromChain: string, toChain: string, fromToken: string, toToken: string, amount: string, fromAddress: string) => {
     try {
