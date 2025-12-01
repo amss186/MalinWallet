@@ -8,34 +8,51 @@ import {
   ArrowRightLeft,
   TrendingUp,
   Globe,
-  BarChart2,
-  GraduationCap,
   Sparkles,
   Settings,
   LogOut,
   ChevronDown
 } from 'lucide-react';
-import { auth, db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { auth } from '@/lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 import { UserProfile } from '@/types';
 
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [activeAddress, setActiveAddress] = useState<string>('');
 
   useEffect(() => {
-    const fetchUser = async () => {
-      if (auth.currentUser) {
-        const docRef = doc(db, "users", auth.currentUser.uid);
-        const snap = await getDoc(docRef);
-        if (snap.exists()) {
-          setUserProfile(snap.data() as UserProfile);
+    // On écoute l'auth Firebase juste pour avoir l'UID
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // CORRECTION MAJEURE : On lit le LocalStorage, pas Firestore
+        // C'est ici que sont stockées les clés (Non-Custodial)
+        const storageKey = `malin_user_${user.uid}`;
+        const storedData = localStorage.getItem(storageKey);
+        
+        if (storedData) {
+          try {
+            const parsedData = JSON.parse(storedData) as UserProfile;
+            setUserProfile(parsedData);
+
+            // Trouver l'adresse active
+            if (parsedData.activeWalletId && parsedData.wallets) {
+                const activeWallet = parsedData.wallets.find(w => w.id === parsedData.activeWalletId);
+                if (activeWallet) {
+                    setActiveAddress(activeWallet.address);
+                }
+            }
+          } catch (e) {
+            console.error("Erreur lecture LocalStorage Sidebar", e);
+          }
         }
       }
-    };
-    fetchUser();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const handleLogout = async () => {
     await auth.signOut();
@@ -67,15 +84,22 @@ export default function Sidebar() {
       >
          <div className="flex items-center gap-3 overflow-hidden">
             <div className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center text-white font-bold text-sm shadow-lg bg-indigo-600">
-              {userProfile?.wallets[0]?.name[0] || 'M'}
+              {/* Initiale du Wallet */}
+              {userProfile?.wallets && userProfile.wallets.length > 0 
+                ? userProfile.wallets[0].name[0].toUpperCase() 
+                : 'M'}
             </div>
             <div className="text-left truncate">
               <p className="font-bold text-sm truncate text-white group-hover:text-indigo-200 transition">
-                {userProfile?.wallets[0]?.name || 'Main Wallet'}
+                {userProfile?.wallets && userProfile.wallets.length > 0
+                    ? userProfile.wallets[0].name 
+                    : 'Loading...'}
               </p>
               <p className="text-xs text-slate-500 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                {userProfile && (userProfile as any).activeWalletAddress ? `${(userProfile as any).activeWalletAddress.slice(0,6)}...${(userProfile as any).activeWalletAddress.slice(-4)}` : 'Loading...'}
+                {activeAddress 
+                    ? `${activeAddress.slice(0,6)}...${activeAddress.slice(-4)}` 
+                    : '...'}
               </p>
             </div>
          </div>
@@ -109,3 +133,4 @@ export default function Sidebar() {
     </aside>
   );
 }
+
