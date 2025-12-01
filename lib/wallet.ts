@@ -8,11 +8,9 @@ const TAG_LENGTH = 128;
 
 // --- DÉTECTION INTELLIGENTE DE L'ENVIRONNEMENT ---
 const getCrypto = () => {
-  // 1. Si on est dans le navigateur (Chrome/Mobile)
   if (typeof window !== 'undefined' && window.crypto) {
     return window.crypto;
   }
-  // 2. Si on est sur le Bot (Node.js)
   // @ts-ignore
   return globalThis.crypto; 
 };
@@ -28,9 +26,15 @@ const fromBase64 = (str: string) => {
     }
 };
 
+// ✅ CORRECTION ICI : Boucle simple pour éviter l'erreur de build Vercel
 const toBase64 = (bytes: Uint8Array) => {
     if (typeof window !== 'undefined') {
-        return btoa(String.fromCharCode(...bytes));
+        let binary = '';
+        const len = bytes.byteLength;
+        for (let i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return btoa(binary);
     } else {
         return Buffer.from(bytes).toString('base64');
     }
@@ -113,7 +117,6 @@ export const WalletService = {
     const keyBytes = await WalletService.deriveKey(password, salt);
     const key = await crypto.subtle.importKey("raw", keyBytes.buffer as ArrayBuffer, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
     
-    // Encoder text compatible node/web
     const enc = new TextEncoder(); 
     const encryptedContent = await crypto.subtle.encrypt({ name: ALGORITHM, iv, tagLength: TAG_LENGTH }, key, enc.encode(data));
 
