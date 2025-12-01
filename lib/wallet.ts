@@ -1,10 +1,15 @@
 import { ethers } from 'ethers';
 import { argon2id } from 'hash-wasm';
 import { Keypair } from '@solana/web3.js';
+import * as bs58 from 'bs58';
 
 const ALGORITHM = 'AES-GCM';
-const KEY_LENGTH = 256;
 const TAG_LENGTH = 128; // bits
+
+// --- UTILITAIRES COMPATIBLES NAVIGATEUR (Remplacement de Buffer) ---
+const toHex = (buffer: Uint8Array) => Array.from(buffer).map(b => b.toString(16).padStart(2, '0')).join('');
+const fromBase64 = (str: string) => Uint8Array.from(atob(str), c => c.charCodeAt(0));
+const toBase64 = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes));
 
 export const WalletService = {
   /**
@@ -28,14 +33,15 @@ export const WalletService = {
   },
 
   /**
-   * Generates a new Random Solana Wallet
+   * Generates a new Random Solana Wallet (Mobile Safe)
    */
   createSolanaWallet: () => {
     try {
       const keypair = Keypair.generate();
       return {
         address: keypair.publicKey.toBase58(),
-        privateKey: Buffer.from(keypair.secretKey).toString('hex'), // Storing as hex for consistency
+        // Utilisation de bs58 pour encoder la clé secrète (Standard Solana)
+        privateKey: bs58.encode(keypair.secretKey),
         type: 'solana'
       };
     } catch (e: any) {
@@ -44,25 +50,49 @@ export const WalletService = {
   },
 
   /**
-   * Recovers a wallet from a Mnemonic Phrase (EVM)
+   * Recovers a wallet from a Mnemonic Phrase (EVM) or Private Key
    */
-  recoverWallet: (mnemonic: string) => {
+  recoverWallet: (input: string) => {
     try {
-      // Validate mnemonic word count
-      const wordCount = mnemonic.trim().split(/\s+/).length;
-      if (wordCount !== 12 && wordCount !== 24) {
-          throw new Error("Invalid mnemonic length. Must be 12 or 24 words.");
+      const cleanInput = input.trim();
+      
+      // Cas A : Phrase Secrète (Mnemonic)
+      if (cleanInput.includes(' ')) {
+         const wallet = ethers.Wallet.fromPhrase(cleanInput);
+         return {
+            address: wallet.address,
+            privateKey: wallet.privateKey,
+            mnemonic: cleanInput,
+            type: 'evm'
+         };
+      } 
+      // Cas B : Clé privée EVM (commence par 0x)
+      else if (cleanInput.startsWith('0x')) {
+         const wallet = new ethers.Wallet(cleanInput);
+         return { address: wallet.address, privateKey: wallet.privateKey, mnemonic: null, type: 'evm' };
       }
-
-      const wallet = ethers.Wallet.fromPhrase(mnemonic);
-      return {
-        address: wallet.address,
-        privateKey: wallet.privateKey,
-        mnemonic: mnemonic,
-        type: 'evm'
-      };
+      // Cas C : Clé privée Solana (Base58)
+      else {
+         try {
+             const secretKey = bs58.decode(cleanInput);
+             if (secretKey.length === 64) {
+                 const keypair = Keypair.fromSecretKey(secretKey);
+                 return { 
+                     address: keypair.publicKey.toBase58(), 
+                     privateKey: cleanInput, 
+                     mnemonic: null, 
+                     type: 'solana' 
+                 };
+             }
+         } catch (err) {
+             // Fallback: Peut-être une clé EVM sans le 0x
+             const wallet = new ethers.Wallet("0x" + cleanInput);
+             return { address: wallet.address, privateKey: wallet.privateKey, mnemonic: null, type: 'evm' };
+         }
+      }
+      throw new Error("Format de clé non reconnu");
     } catch (e) {
-      throw new Error("Invalid Seed Phrase");
+      throw new Error("Clé invalide ou malformée");
     }
   },
 
@@ -75,7 +105,7 @@ export const WalletService = {
       salt,
       parallelism: 1,
       iterations: 256,
-      memorySize: 512,
+      memorySize: 4096, // Augmenté à 4MB pour plus de sécurité (compatible mobile)
       hashLength: 32,
       outputType: 'hex'
     });
@@ -87,6 +117,7 @@ export const WalletService = {
 
   /**
    * Encrypts sensitive data using AES-256-GCM with Argon2id derived key
+   * (Uses Native Web Crypto API - No Buffer)
    */
   encrypt: async (data: string, password: string): Promise<string> => {
     if (!data || !password) throw new Error("Missing data or password");
@@ -98,7 +129,7 @@ export const WalletService = {
 
     const key = await window.crypto.subtle.importKey(
       "raw",
-      keyBytes.buffer as ArrayBuffer, // Cast to satisfy TS if needed, or create slice
+      keyBytes.buffer as ArrayBuffer,
       { name: "AES-GCM" },
       false,
       ["encrypt", "decrypt"]
@@ -112,25 +143,17 @@ export const WalletService = {
       enc.encode(data)
     );
 
-    const bufferToBase64 = (buf: ArrayBuffer | Uint8Array) => {
-        const bytes = new Uint8Array(buf);
-        let binary = '';
-        for (let i = 0; i < bytes.byteLength; i++) {
-            binary += String.fromCharCode(bytes[i]);
-        }
-        return btoa(binary);
-    };
-
     return JSON.stringify({
       v: 2,
-      salt: bufferToBase64(salt),
-      iv: bufferToBase64(iv),
-      data: bufferToBase64(encryptedContent)
+      salt: toBase64(salt),
+      iv: toBase64(iv),
+      data: toBase64(new Uint8Array(encryptedContent))
     });
   },
 
   /**
    * Decrypts the data
+   * (Uses Native Web Crypto API - No Buffer)
    */
   decrypt: async (encryptedBundle: string, password: string): Promise<string> => {
     try {
@@ -140,18 +163,9 @@ export const WalletService = {
           throw new Error("Invalid encrypted bundle format");
       }
 
-      const base64ToUint8 = (str: string) =>
-        Uint8Array.from(atob(str), c => c.charCodeAt(0));
-
-      const salt = base64ToUint8(bundle.salt);
-      const iv = base64ToUint8(bundle.iv);
-      const data = base64ToUint8(bundle.data);
-
-      if (bundle.v !== 2) {
-         if (bundle.v === 1) {
-             throw new Error("Legacy wallet format. Please re-import or update.");
-         }
-      }
+      const salt = fromBase64(bundle.salt);
+      const iv = fromBase64(bundle.iv);
+      const data = fromBase64(bundle.data);
 
       const keyBytes = await WalletService.deriveKey(password, salt);
 
@@ -172,7 +186,8 @@ export const WalletService = {
       return new TextDecoder().decode(decryptedContent);
     } catch (e) {
       console.error("Decryption error:", e);
-      throw new Error("Incorrect Password or Corrupted Data");
+      throw new Error("Mot de passe incorrect ou données corrompues");
     }
   }
 };
+
