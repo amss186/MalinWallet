@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { WalletService } from '@/lib/wallet'; // Ton service sécurisé
+import { WalletService } from '@/lib/wallet';
 import { auth } from '@/lib/firebase';
-import { Lock, Unlock, ArrowRight, Loader2, Fingerprint } from 'lucide-react';
+import { Lock, ArrowRight, Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 export default function LockGuard({ children }: { children: React.ReactNode }) {
@@ -13,10 +13,8 @@ export default function LockGuard({ children }: { children: React.ReactNode }) {
   const [hasWallet, setHasWallet] = useState(false);
 
   useEffect(() => {
-    // Vérifier si l'utilisateur a déjà un wallet configuré
     const checkWallet = () => {
       const uid = auth.currentUser?.uid;
-      // On accepte de ne pas être locké si on n'est pas encore connecté (la page login gère ça)
       if (!uid) {
          setIsLocked(false); 
          return;
@@ -27,16 +25,13 @@ export default function LockGuard({ children }: { children: React.ReactNode }) {
 
       if (storedData) {
         setHasWallet(true);
-        // Par défaut, on lock au chargement de la page
         setIsLocked(true);
       } else {
-        // Pas de wallet = Pas de lock (redirection onboarding gérée par les pages)
         setHasWallet(false);
         setIsLocked(false);
       }
     };
 
-    // Petit délai pour laisser Firebase s'initialiser
     const timer = setTimeout(checkWallet, 1000);
     return () => clearTimeout(timer);
   }, []);
@@ -60,33 +55,27 @@ export default function LockGuard({ children }: { children: React.ReactNode }) {
 
       if (!activeWallet) throw new Error("Wallet introuvable");
 
-      // LE TEST ULTIME : On essaie de déchiffrer la clé avec le mot de passe
-      // Si ça marche, le mot de passe est bon. Si ça plante, c'est mauvais.
       await WalletService.decrypt(activeWallet.privateKeyEncrypted, password);
 
-      // Succès !
       setIsLocked(false);
       toast.success("Wallet déverrouillé");
     } catch (error) {
       console.error(error);
       toast.error("Mot de passe incorrect");
-      setPassword(''); // Reset input pour réessayer
+      setPassword('');
     } finally {
       setLoading(false);
     }
   };
 
-  // Si pas verrouillé, on affiche l'application normalement
   if (!isLocked) {
     return <>{children}</>;
   }
 
-  // SINON : AFFICHER L'ÉCRAN DE VERROUILLAGE (Style MetaMask)
   return (
     <div className="fixed inset-0 z-[9999] bg-[#020617] flex flex-col items-center justify-center p-6">
       <div className="w-full max-w-sm">
         
-        {/* Logo / Icon */}
         <div className="flex justify-center mb-8">
            <div className="w-24 h-24 bg-indigo-500/10 rounded-full flex items-center justify-center ring-1 ring-indigo-500/30 shadow-[0_0_40px_rgba(99,102,241,0.3)]">
               <Lock className="w-10 h-10 text-indigo-400" />
@@ -127,15 +116,17 @@ export default function LockGuard({ children }: { children: React.ReactNode }) {
         </form>
 
         <div className="mt-8 text-center">
+            {/* CORRECTION ICI : n'est -> n&apos;est */}
             <button 
                 onClick={() => window.location.href = '/login'}
                 className="text-slate-500 text-xs hover:text-white transition"
             >
-                Ce n'est pas vous ? Déconnexion
+                Ce n&apos;est pas vous ? Déconnexion
             </button>
         </div>
       </div>
     </div>
   );
 }
+
 
