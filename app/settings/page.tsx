@@ -13,10 +13,26 @@ import {
   ChevronRight, 
   LogOut,
   Moon,
-  Wallet
+  Wallet,
+  LucideIcon // Import du type pour TypeScript
 } from 'lucide-react';
 import { auth } from '@/lib/firebase';
 import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+// --- DÉFINITION DES TYPES POUR ÉVITER LES ERREURS ---
+interface SettingsItem {
+  icon: LucideIcon;
+  label: string;
+  action: () => void;
+  value?: string; // Optionnel
+  sub?: string;   // Optionnel
+}
+
+interface SettingsGroup {
+  title: string;
+  items: SettingsItem[];
+}
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -24,10 +40,10 @@ export default function SettingsPage() {
   const handleLogout = async () => {
     await auth.signOut();
     router.push('/login');
-    toast.info("À bientôt !");
   };
 
-  const settingsGroups = [
+  // On type explicitement le tableau
+  const settingsGroups: SettingsGroup[] = [
     {
       title: "Général",
       items: [
@@ -38,8 +54,8 @@ export default function SettingsPage() {
     {
       title: "Sécurité & Wallet",
       items: [
-        { icon: Shield, label: "Sécurité et confidentialité", sub: "Clé privée, Phrase secrète", action: () => {} },
-        { icon: Wallet, label: "Gestion des portefeuilles", action: () => {} },
+        { icon: Shield, label: "Sécurité", sub: "Clé privée, Phrase secrète", action: () => {} },
+        { icon: Wallet, label: "Portefeuilles", action: () => {} },
         { icon: Smartphone, label: "WalletConnect", sub: "Scanner un QR Code", action: () => router.push('/scan') },
       ]
     },
@@ -47,19 +63,18 @@ export default function SettingsPage() {
       title: "Préférences",
       items: [
         { icon: Bell, label: "Notifications", action: () => router.push('/notifications') },
-        { icon: CreditCard, label: "Moyens de paiement", action: () => {} },
       ]
     },
     {
-      title: "Autres",
+      title: "Info",
       items: [
-        { icon: Info, label: "À propos de Malin", value: "v2.0.0", action: () => {} },
+        { icon: Info, label: "Version Malin", value: "v2.0.0", action: () => {} },
       ]
     }
   ];
 
   return (
-    <div className="min-h-screen bg-[#020617] pb-24">
+    <div className="min-h-screen bg-[#020617] pb-24 text-white">
       <ToastContainer theme="dark" position="bottom-center" />
 
       {/* Header */}
@@ -67,12 +82,10 @@ export default function SettingsPage() {
         <button onClick={() => router.back()} className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition">
           <ChevronLeft size={24} className="text-white" />
         </button>
-        <h1 className="text-xl font-bold text-white">Paramètres</h1>
+        <h1 className="text-xl font-bold">Paramètres</h1>
       </div>
 
       <div className="p-4 space-y-6 max-w-lg mx-auto mt-2">
-        
-        {/* Settings Groups */}
         {settingsGroups.map((group, idx) => (
           <div key={idx}>
             <h3 className="text-indigo-400 text-xs font-bold uppercase tracking-wider mb-3 ml-2">{group.title}</h3>
@@ -88,7 +101,8 @@ export default function SettingsPage() {
                       <item.icon size={20} />
                     </div>
                     <div className="text-left">
-                      <p className="text-white font-medium">{item.label}</p>
+                      <p className="font-medium">{item.label}</p>
+                      {/* TypeScript est content maintenant car 'sub' est marqué optionnel (?) */}
                       {item.sub && <p className="text-xs text-slate-500">{item.sub}</p>}
                     </div>
                   </div>
@@ -102,19 +116,19 @@ export default function SettingsPage() {
           </div>
         ))}
 
-        {/* Logout Button */}
         <button 
           onClick={handleLogout}
-          className="w-full p-4 rounded-2xl border border-red-500/20 bg-red-500/10 text-red-400 font-bold hover:bg-red-500/20 transition flex items-center justify-center gap-2 mt-8"
+          className="w-full p-4 rounded-2xl border border-red-500/20 bg-red-500/10 text-red-400 font-bold hover:bg-red-500/20 transition flex items-center justify-center gap-2 mt-8 active:scale-95"
         >
           <LogOut size={20} /> Déconnexion
         </button>
-
-        <p className="text-center text-slate-600 text-xs mt-8">
-          Malin Wallet • Fait avec ❤️ en Gambie
+        
+        <p className="text-center text-slate-600 text-xs mt-8 pb-10">
+          Malin Wallet • Fait avec ❤️ par Amss
         </p>
       </div>
     </div>
   );
 }
+
 
