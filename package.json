@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "bot": "tsx bot.ts"
   },
   "dependencies": {
     "@solana/web3.js": "^1.90.0",
@@ -25,7 +26,10 @@
     "react-hook-form": "^7.50.1",
     "react-toastify": "^10.0.4",
     "tailwind-merge": "^2.2.1",
-    "bs58": "^5.0.0"
+    "bs58": "^5.0.0",
+    "node-telegram-bot-api": "^0.64.0",
+    "dotenv": "^16.4.1",
+    "tsx": "^4.7.1"
   },
   "overrides": {
     "undici": "5.28.2"
@@ -34,6 +38,7 @@
     "@types/node": "^20.11.17",
     "@types/react": "^18.2.55",
     "@types/react-dom": "^18.2.19",
+    "@types/node-telegram-bot-api": "^0.64.0",
     "autoprefixer": "^10.4.17",
     "eslint": "^8.56.0",
     "eslint-config-next": "14.1.0",
@@ -42,4 +47,5 @@
     "typescript": "^5.3.3"
   }
 }
+
 
