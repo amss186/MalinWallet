@@ -24,7 +24,8 @@
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.50.1",
     "react-toastify": "^10.0.4",
-    "tailwind-merge": "^2.2.1"
+    "tailwind-merge": "^2.2.1",
+    "bs58": "^5.0.0"
   },
   "overrides": {
     "undici": "5.28.2"
@@ -41,3 +42,4 @@
     "typescript": "^5.3.3"
   }
 }
+
