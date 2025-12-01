@@ -1,36 +1,54 @@
-export interface WalletAccount {
-  address: string;
-  name: string;
-  encryptedPrivateKey: string; // JSON string with iv, salt, data
-}
+// Définition des types de chaînes acceptées (C'est ça qui corrige l'erreur POLYGON)
+export type ChainType = 'ETH' | 'SOL' | 'POLYGON';
 
-export interface UserProfile {
-  uid: string;
-  email: string;
-  wallets: WalletAccount[];
-  activeWalletAddress: string;
-  settings: {
-    currency: string;
-    language: string;
-  };
-}
-
+// Interface pour un Actif (Token/Coin)
 export interface Asset {
+  id: string;
   symbol: string;
   name: string;
-  balance: string; // Using string for precision (BigNumber)
-  decimals: number;
+  balance: number; // On utilise number pour faciliter les calculs dans le Dashboard
   price: number;
-  logoUrl?: string;
+  change24h: number;
+  chain: ChainType; 
+  color?: string;
+  decimals: number;
   contractAddress?: string;
-  chainId: number;
+  logoUrl?: string;
+  chainId?: number;
+}
+
+// Interface pour un Wallet stocké
+export interface WalletAccount {
+  id: string; // Ajouté pour gérer plusieurs wallets proprement
+  name: string;
+  address: string;
+  color: string;
+  // C'est le nom que j'utilise dans SendModal et WalletService
+  privateKeyEncrypted: string; 
+  mnemonic?: string; // Optionnel
+}
+
+// Interface pour le Profil Utilisateur
+export interface UserProfile {
+  id: string;
+  uid: string;
+  email: string;
+  name: string;
+  currency: string;
+  language: string;
+  createdAt: string;
+  wallets: WalletAccount[];
+  activeWalletId: string; // On utilise l'ID pour trouver le wallet actif
+  contacts: any[]; 
+  dappHistory: any[]; 
+  favorites: any[]; 
 }
 
 export interface NFT {
-  contract: string;
-  tokenId: string;
-  title: string;
-  description: string;
-  imageUrl: string;
-  type: 'ERC721' | 'ERC1155';
+  id: string;
+  name: string;
+  image: string;
+  collection: string;
 }
+
+
