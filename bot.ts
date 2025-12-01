@@ -3,16 +3,22 @@ import dotenv from 'dotenv';
 import { WalletService } from './src/lib/wallet';
 import { ChainService } from './src/lib/chain';
 import fs from 'fs';
+import http from 'http';
+import https from 'https';
 
-// Charger les variables d'environnement
+// Charger les variables
 dotenv.config({ path: '.env.local' });
 
-// TON TOKEN TELEGRAM
-const token = "8445450793:AAE2Q2pgmqgtJFAWFwtMFFZLzHqx4MFUU1s";
+const token = process.env.TELEGRAM_BOT_TOKEN;
+
+if (!token) {
+    console.error("❌ ERREUR: Token manquant. Vérifie tes variables d'environnement.");
+    process.exit(1);
+}
 
 const bot = new TelegramBot(token, { polling: true });
 
-// Base de données locale pour les utilisateurs du bot
+// --- BASE DE DONNÉES (JSON) ---
 const DB_FILE = 'bot_users.json';
 
 const loadUsers = () => {
@@ -28,35 +34,29 @@ const saveUser = (chatId: number, data: any) => {
     fs.writeFileSync(DB_FILE, JSON.stringify(users, null, 2));
 };
 
-console.log("🚀 Malin Bot est en ligne !");
+console.log("🚀 Malin Bot démarre...");
 
-// --- COMMANDES DU BOT ---
+// --- COMMANDES TELEGRAM ---
 
-// 1. START
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
-    const username = msg.from?.first_name || "Ami";
-
-    bot.sendMessage(chatId, `🚀 **Bienvenue sur Malin Bot, ${username} !**\n\nJe suis ton portefeuille crypto sécurisé sur Telegram.\n\nCommandes disponibles :\n🆕 /create - Créer un nouveau wallet\n💰 /balance - Voir mon solde\n📈 /price - Voir les prix du marché`, { parse_mode: 'Markdown' });
+    bot.sendMessage(chatId, `👋 **Bienvenue sur Malin Bot !**\n\nJe suis ton wallet crypto 24/7.\n\n/create - Créer un wallet\n/balance - Voir mon solde\n/price - Prix du marché`);
 });
 
-// 2. CREATE WALLET
 bot.onText(/\/create/, async (msg) => {
     const chatId = msg.chat.id;
     const users = loadUsers();
 
     if (users[chatId]) {
-        bot.sendMessage(chatId, "⚠️ Tu as déjà un wallet configuré ! Utilise /balance.");
+        bot.sendMessage(chatId, "⚠️ Tu as déjà un wallet !");
         return;
     }
 
-    bot.sendMessage(chatId, "🔐 Génération de ton wallet sécurisé... Patientez.");
+    bot.sendMessage(chatId, "🔐 Création du wallet...");
 
     try {
         const wallet = WalletService.createEVMWallet();
-        
-        // Mot de passe temporaire basé sur l'ID
-        const password = `pwd_${chatId}_secure`; 
+        const password = `tg_${chatId}_secret_key`; 
         const encryptedKey = await WalletService.encrypt(wallet.privateKey, password);
 
         saveUser(chatId, {
@@ -65,68 +65,75 @@ bot.onText(/\/create/, async (msg) => {
             createdAt: new Date().toISOString()
         });
 
-        bot.sendMessage(chatId, `✅ **Wallet Créé !**\n\n📍 Ton adresse ETH :\n\`${wallet.address}\`\n\n🔑 Ta phrase secrète (A NOTER ET SUPPRIMER) :\n\`${wallet.mnemonic}\`\n\n⚠️ Supprime ce message après avoir noté tes mots !`, { parse_mode: 'Markdown' });
-
+        bot.sendMessage(chatId, `✅ **Wallet Créé !**\n\n📍 Adresse :\n\`${wallet.address}\`\n\n🔑 Phrase :\n\`${wallet.mnemonic}\``, { parse_mode: 'Markdown' });
     } catch (e: any) {
-        bot.sendMessage(chatId, "Erreur création : " + e.message);
+        bot.sendMessage(chatId, "Erreur : " + e.message);
     }
 });
 
-// 3. BALANCE & PRIX
 bot.onText(/\/balance/, async (msg) => {
     const chatId = msg.chat.id;
     const users = loadUsers();
     const user = users[chatId];
 
     if (!user) {
-        bot.sendMessage(chatId, "Tu n'as pas de wallet. Tape /create d'abord.");
+        bot.sendMessage(chatId, "Pas de wallet. Tape /create.");
         return;
     }
 
-    bot.sendMessage(chatId, "🔍 Recherche des fonds sur la Blockchain...");
+    bot.sendMessage(chatId, "🔄 Chargement...");
 
     try {
         const ethBalance = await ChainService.getNativeBalance(user.address);
-        
-        // Prix via CoinGecko
-        const priceRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
-        const priceData = await priceRes.json();
-        const ethPrice = priceData.ethereum.usd;
-        
-        const totalUsd = (parseFloat(ethBalance) * ethPrice).toFixed(2);
+        const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+        const data = await res.json();
+        const price = data.ethereum.usd || 0;
+        const total = (parseFloat(ethBalance) * price).toFixed(2);
 
-        bot.sendMessage(chatId, `💰 **Ton Portefeuille**\n\n💎 **${parseFloat(ethBalance).toFixed(4)} ETH**\n💵 ≈ $${totalUsd}\n\n📍 Adresse: \`${user.address}\``, { parse_mode: 'Markdown' });
-
+        bot.sendMessage(chatId, `💰 **Solde**\n${parseFloat(ethBalance).toFixed(4)} ETH\n≈ $${total}`);
     } catch (e: any) {
         bot.sendMessage(chatId, "Erreur réseau : " + e.message);
     }
 });
 
-// 4. PRICE CHECKER
 bot.onText(/\/price/, async (msg) => {
     const chatId = msg.chat.id;
     try {
         const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum,solana,bitcoin&vs_currencies=usd');
         const data = await res.json();
-        
-        const message = `📊 **Marché Crypto**\n\n` +
-                        `🟠 Bitcoin: $${data.bitcoin.usd}\n` +
-                        `🔵 Ethereum: $${data.ethereum.usd}\n` +
-                        `🟣 Solana: $${data.solana.usd}`;
-        
-        bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+        bot.sendMessage(chatId, `📊 **Marché**\nBTC: $${data.bitcoin.usd}\nETH: $${data.ethereum.usd}\nSOL: $${data.solana.usd}`);
     } catch (e) {
-        bot.sendMessage(chatId, "Impossible de récupérer les prix.");
+        bot.sendMessage(chatId, "Erreur API.");
     }
 });
 
-🔥 Lancement Final
- * Remplace le code dans src/lib/wallet.ts.
- * Remplace le code dans bot.ts.
- * Pousse sur GitHub (pour réparer le site Vercel).
- * Lance ton bot sur ton téléphone :
-   npm run bot
+// --- SERVEUR WEB & KEEP ALIVE (Pour Render) ---
 
+const PORT = process.env.PORT || 3000;
+const APP_URL = process.env.RENDER_EXTERNAL_URL || process.env.APP_URL; 
 
+const server = http.createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('Malin Bot is alive & running!');
+});
+
+server.listen(PORT, () => {
+    console.log(`🌍 Server listening on port ${PORT}`);
+});
+
+// SYSTEME ANTI-SOMMEIL (KEEP ALIVE - 5 MINUTES)
+if (APP_URL) {
+    console.log(`🔄 Keep-Alive activé sur : ${APP_URL}`);
+    setInterval(() => {
+        console.log("⏰ Pinging self to keep alive...");
+        https.get(APP_URL, (res) => {
+            console.log(`✅ Ping success: ${res.statusCode}`);
+        }).on('error', (err) => {
+            console.error(`❌ Ping failed: ${err.message}`);
+        });
+    }, 5 * 60 * 1000); // 5 minutes (300000 ms)
+} else {
+    console.warn("⚠️ Attention : Pas d'URL détectée pour le Keep-Alive. Le bot risque de s'endormir.");
+}
 
 
