@@ -1,4 +1,4 @@
-// Définition des types de chaînes acceptées (C'est ça qui corrige l'erreur POLYGON)
+// ✅ ICI : J'ai ajouté 'POLYGON' pour que l'erreur disparaisse
 export type ChainType = 'ETH' | 'SOL' | 'POLYGON';
 
 // Interface pour un Actif (Token/Coin)
@@ -6,10 +6,10 @@ export interface Asset {
   id: string;
   symbol: string;
   name: string;
-  balance: number; // On utilise number pour faciliter les calculs dans le Dashboard
+  balance: number;
   price: number;
   change24h: number;
-  chain: ChainType; 
+  chain: ChainType; // Utilise le type mis à jour ci-dessus
   color?: string;
   decimals: number;
   contractAddress?: string;
@@ -19,12 +19,11 @@ export interface Asset {
 
 // Interface pour un Wallet stocké
 export interface WalletAccount {
-  id: string; // Ajouté pour gérer plusieurs wallets proprement
+  id: string;
   name: string;
   address: string;
   color: string;
-  // C'est le nom que j'utilise dans SendModal et WalletService
-  privateKeyEncrypted: string; 
+  privateKeyEncrypted: string;
   mnemonic?: string; // Optionnel
 }
 
@@ -38,7 +37,7 @@ export interface UserProfile {
   language: string;
   createdAt: string;
   wallets: WalletAccount[];
-  activeWalletId: string; // On utilise l'ID pour trouver le wallet actif
+  activeWalletId: string;
   contacts: any[]; 
   dappHistory: any[]; 
   favorites: any[]; 
