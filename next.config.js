@@ -2,7 +2,14 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['firebasestorage.googleapis.com', 'assets.coingecko.com', 'raw.githubusercontent.com'],
+    domains: ['assets.coingecko.com', 'raw.githubusercontent.com'],
+  },
+  webpack: (config, { isServer }) => {
+    config.experiments = {
+      ...config.experiments,
+      asyncWebAssembly: true,
+    };
+    return config;
   },
 };
 
