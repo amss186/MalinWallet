@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "bot": "tsx bot.ts"
+    "bot": "tsx bot.ts",
+    "dev:all": "concurrently \"npm run dev\" \"npm run bot\""
   },
   "dependencies": {
     "@solana/web3.js": "^1.90.0",
@@ -29,7 +30,9 @@
     "bs58": "^5.0.0",
     "node-telegram-bot-api": "^0.64.0",
     "dotenv": "^16.4.1",
-    "tsx": "^4.7.1"
+    "tsx": "^4.7.1",
+    "concurrently": "^8.2.2",
+    "react-qr-reader": "^3.0.0-beta-1"
   },
   "overrides": {
     "undici": "5.28.2"
@@ -39,6 +42,7 @@
     "@types/react": "^18.2.55",
     "@types/react-dom": "^18.2.19",
     "@types/node-telegram-bot-api": "^0.64.0",
+    "@types/react-qr-reader": "^2.1.7",
     "autoprefixer": "^10.4.17",
     "eslint": "^8.56.0",
     "eslint-config-next": "14.1.0",
