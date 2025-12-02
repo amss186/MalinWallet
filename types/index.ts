@@ -1,7 +1,5 @@
-// ✅ ICI : J'ai ajouté 'POLYGON' pour que l'erreur disparaisse
 export type ChainType = 'ETH' | 'SOL' | 'POLYGON';
 
-// Interface pour un Actif (Token/Coin)
 export interface Asset {
   id: string;
   symbol: string;
@@ -9,7 +7,7 @@ export interface Asset {
   balance: number;
   price: number;
   change24h: number;
-  chain: ChainType; // Utilise le type mis à jour ci-dessus
+  chain: ChainType;
   color?: string;
   decimals: number;
   contractAddress?: string;
@@ -17,17 +15,16 @@ export interface Asset {
   chainId?: number;
 }
 
-// Interface pour un Wallet stocké
 export interface WalletAccount {
   id: string;
   name: string;
-  address: string;
+  address: string;        // Adresse ETH (0x...)
+  solanaAddress?: string; // ✅ NOUVEAU : Adresse Solana (Optionnel pour compatibilité)
   color: string;
   privateKeyEncrypted: string;
-  mnemonic?: string; // Optionnel
+  mnemonic?: string;
 }
 
-// Interface pour le Profil Utilisateur
 export interface UserProfile {
   id: string;
   uid: string;
