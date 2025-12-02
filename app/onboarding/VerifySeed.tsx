@@ -78,7 +78,7 @@ export function VerifySeed({ words, onComplete }: VerifySeedProps) {
         ))}
         {selectedWords.length === 0 && (
           <div className="w-full h-full flex items-center justify-center text-gray-600 text-sm italic">
-            Appuyez sur les mots ci-dessous dans l'ordre
+            Appuyez sur les mots ci-dessous dans l&apos;ordre
           </div>
         )}
       </div>
