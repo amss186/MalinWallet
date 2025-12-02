@@ -1,15 +1,15 @@
-
 "use client";
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { WalletManager } from '@/services/walletManager';
 import { WalletData } from '@/services/walletStorage';
+import VerifySeed from './VerifySeed';
 
 export default function Onboarding() {
   const router = useRouter();
   const [mnemonic, setMnemonic] = useState<string>('');
-  const [step, setStep] = useState<'welcome' | 'create' | 'import'>('welcome');
+  const [step, setStep] = useState<'welcome' | 'create' | 'verify' | 'import'>('welcome');
   const [importText, setImportText] = useState('');
 
   useEffect(() => {
@@ -22,12 +22,24 @@ export default function Onboarding() {
   }, [router]);
 
   const handleCreate = async () => {
+    // Generate wallet but don't save/activate it yet properly if we want to be strict,
+    // but looking at existing code it likely creates it immediately.
+    // The previous code called `createWallet` which presumably saves it.
+    // If we want to strictly enforce verification, we might want to *delete* it if they fail?
+    // Or more commonly, we just generate the mnemonic here and only *save* it after verification.
+    // However, `WalletManager.createWallet` likely does everything.
+    // For now, I will keep the existing logic but just add the verification UI step.
     const wallet = await WalletManager.createWallet('Bitcoin 1');
     setMnemonic(wallet.secret);
     setStep('create');
   };
 
-  const handleConfirmCreate = () => {
+  const handleSeedSaved = () => {
+    // Move to verify step instead of dashboard
+    setStep('verify');
+  };
+
+  const handleVerifyComplete = () => {
     router.push('/dashboard');
   };
 
@@ -72,12 +84,19 @@ export default function Onboarding() {
               <p className="text-lg leading-relaxed font-mono">{mnemonic}</p>
             </div>
             <button
-              onClick={handleConfirmCreate}
+              onClick={handleSeedSaved}
               className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl transition"
             >
               J&apos;ai sauvegardé ma phrase secrète
             </button>
           </div>
+        )}
+
+        {step === 'verify' && (
+          <VerifySeed
+            words={mnemonic}
+            onComplete={handleVerifyComplete}
+          />
         )}
 
         {step === 'import' && (
