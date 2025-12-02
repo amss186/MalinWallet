@@ -1,5 +1,6 @@
 import React from 'react';
 import { Metadata } from 'next';
+import '@/polyfills'; // Import polyfills
 import './globals.css';
 
 export const metadata: Metadata = {

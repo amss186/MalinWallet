@@ -2,7 +2,7 @@
 "use client";
 
 import Link from 'next/link';
-import { ArrowLeft, ChevronRight, Shield, Globe, Banknote, HelpCircle, Info } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Shield, Globe, Banknote, HelpCircle, Info, Lock } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -37,6 +37,9 @@ export default function SettingsPage() {
           <div className="bg-[#1C1C1E] rounded-xl overflow-hidden">
              <SettingsItem icon={<Shield className="text-red-400" />} label="Chiffrer le stockage" />
              <SettingsItem icon={<Shield className="text-red-400" />} label="Authentification (PIN)" value="Désactivé" />
+             <Link href="/settings/recovery">
+                <SettingsItem icon={<Lock className="text-yellow-400" />} label="Recovery Social HALAL" value="Inactif" />
+             </Link>
           </div>
         </section>
 

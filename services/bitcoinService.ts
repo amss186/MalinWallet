@@ -61,7 +61,23 @@ export class BitcoinService {
   // Fetch balance using a public API (Mempool.space is reliable for this use case)
   static async getBalance(address: string): Promise<number> {
     try {
-      const response = await fetch(`https://mempool.space/api/address/${address}`);
+      // Use RpcService to get the best endpoint (mocked for now as we hardcoded mempool.space structure)
+      // Ideally we would adapt the adapter based on the RPC selected.
+      // For this MVP, we assume the RPCs return compatible data or we just use the reliable one.
+      // Let's implement the booster logic:
+      const bestRpc = await import('./rpcService').then(m => m.RpcService.getFastestRpc('bitcoin'));
+
+      // Note: mempool.space API structure is specific. If we switch to blockstream, it is similar (Electrum-like API).
+      // If we switch to Blockchain.info, it is different.
+      // For the "RPC Booster" feature, we will prioritize mempool-compatible APIs.
+
+      // Fallback to mempool if specific RPC fails or returns different structure
+      let baseUrl = 'https://mempool.space/api';
+      if (bestRpc.includes('blockstream') || bestRpc.includes('mempool')) {
+          baseUrl = bestRpc;
+      }
+
+      const response = await fetch(`${baseUrl}/address/${address}`);
       if (!response.ok) return 0;
       const data = await response.json();
       // mempool.space returns chain_stats { funded_txo_sum, spent_txo_sum }
