@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { WalletManager } from '@/services/walletManager';
 import { WalletData } from '@/services/walletStorage';
-import { VerifySeed } from './VerifySeed';
+import VerifySeed from './VerifySeed';
 
 export default function Onboarding() {
   const router = useRouter();

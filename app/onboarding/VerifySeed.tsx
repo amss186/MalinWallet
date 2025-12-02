@@ -7,7 +7,7 @@ interface VerifySeedProps {
   onComplete: () => void;
 }
 
-export function VerifySeed({ words, onComplete }: VerifySeedProps) {
+export default function VerifySeed({ words, onComplete }: VerifySeedProps) {
   const [shuffledWords, setShuffledWords] = useState<string[]>([]);
   const [selectedWords, setSelectedWords] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
