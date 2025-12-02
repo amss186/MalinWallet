@@ -1,74 +1,98 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
-  ChevronLeft, 
-  Shield, 
-  Globe, 
-  Bell, 
-  CreditCard, 
-  Smartphone, 
-  Info, 
-  ChevronRight, 
-  LogOut,
-  Moon,
-  Wallet,
-  LucideIcon // Import du type pour TypeScript
+  ChevronLeft, Shield, Globe, Bell, CreditCard, 
+  Smartphone, Info, ChevronRight, LogOut, Moon, Wallet, 
+  Loader2, PlusCircle
 } from 'lucide-react';
 import { auth } from '@/lib/firebase';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { WalletService } from '@/lib/wallet'; // Import WalletService
 
-// --- DÉFINITION DES TYPES POUR ÉVITER LES ERREURS ---
+// Types
 interface SettingsItem {
-  icon: LucideIcon;
+  icon: any;
   label: string;
   action: () => void;
-  value?: string; // Optionnel
-  sub?: string;   // Optionnel
+  value?: string;
+  sub?: string;
 }
-
-interface SettingsGroup {
-  title: string;
-  items: SettingsItem[];
-}
+interface SettingsGroup { title: string; items: SettingsItem[]; }
 
 export default function SettingsPage() {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
 
+  // LOGOUT
   const handleLogout = async () => {
     await auth.signOut();
     router.push('/login');
   };
 
-  // On type explicitement le tableau
+  // ADD NEW WALLET (Feature demandée)
+  const handleAddWallet = async () => {
+    setLoading(true);
+    try {
+        const uid = auth.currentUser?.uid;
+        if (!uid) return;
+
+        const storageKey = `malin_user_${uid}`;
+        const storedData = localStorage.getItem(storageKey);
+        if (!storedData) return;
+
+        const userData = JSON.parse(storedData);
+        
+        // Création
+        const newWallet = WalletService.createEVMWallet();
+        // On chiffre avec un mot de passe par défaut (à améliorer pour la sécurité)
+        const encryptedKey = await WalletService.encrypt(newWallet.privateKey, "default_password"); 
+
+        const walletObj = {
+            id: crypto.randomUUID(),
+            name: `Compte ${userData.wallets.length + 1}`,
+            address: newWallet.address,
+            color: '#6366f1',
+            privateKeyEncrypted: encryptedKey,
+            mnemonic: newWallet.mnemonic
+        };
+
+        userData.wallets.push(walletObj);
+        userData.activeWalletId = walletObj.id; // Switch auto
+
+        localStorage.setItem(storageKey, JSON.stringify(userData));
+        toast.success("Nouveau portefeuille créé !");
+        setTimeout(() => router.push('/dashboard'), 1000);
+
+    } catch (e) {
+        toast.error("Erreur création wallet");
+    } finally {
+        setLoading(false);
+    }
+  };
+
   const settingsGroups: SettingsGroup[] = [
+    {
+      title: "Gestion",
+      items: [
+        { icon: PlusCircle, label: "Créer un nouveau portefeuille", action: handleAddWallet, sub: "Ajouter un compte secondaire" },
+        { icon: Wallet, label: "Mes Portefeuilles", action: () => {}, value: "Voir tout" },
+      ]
+    },
     {
       title: "Général",
       items: [
-        { icon: Globe, label: "Devise & Langue", value: "USD / Français", action: () => {} },
-        { icon: Moon, label: "Apparence", value: "Sombre", action: () => {} },
+        { icon: Globe, label: "Devise & Langue", value: "USD / Français", action: () => toast.info("Bientôt disponible") },
+        { icon: Moon, label: "Apparence", value: "Sombre", action: () => toast.info("Thème sombre activé par défaut") },
       ]
     },
     {
-      title: "Sécurité & Wallet",
+      title: "Sécurité",
       items: [
         { icon: Shield, label: "Sécurité", sub: "Clé privée, Phrase secrète", action: () => {} },
-        { icon: Wallet, label: "Portefeuilles", action: () => {} },
         { icon: Smartphone, label: "WalletConnect", sub: "Scanner un QR Code", action: () => router.push('/scan') },
-      ]
-    },
-    {
-      title: "Préférences",
-      items: [
-        { icon: Bell, label: "Notifications", action: () => router.push('/notifications') },
-      ]
-    },
-    {
-      title: "Info",
-      items: [
-        { icon: Info, label: "Version Malin", value: "v2.0.0", action: () => {} },
       ]
     }
   ];
@@ -94,15 +118,15 @@ export default function SettingsPage() {
                 <button 
                   key={i}
                   onClick={item.action}
-                  className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition border-b border-white/5 last:border-0 active:bg-indigo-500/10"
+                  disabled={loading}
+                  className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition border-b border-white/5 last:border-0 active:bg-indigo-500/10 disabled:opacity-50"
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-indigo-400">
-                      <item.icon size={20} />
+                      {loading && item.label.includes("Créer") ? <Loader2 className="animate-spin" size={20}/> : <item.icon size={20} />}
                     </div>
                     <div className="text-left">
                       <p className="font-medium">{item.label}</p>
-                      {/* TypeScript est content maintenant car 'sub' est marqué optionnel (?) */}
                       {item.sub && <p className="text-xs text-slate-500">{item.sub}</p>}
                     </div>
                   </div>
@@ -122,10 +146,6 @@ export default function SettingsPage() {
         >
           <LogOut size={20} /> Déconnexion
         </button>
-        
-        <p className="text-center text-slate-600 text-xs mt-8 pb-10">
-          Malin Wallet • Fait avec ❤️ par Amss
-        </p>
       </div>
     </div>
   );
