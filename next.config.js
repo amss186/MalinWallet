@@ -9,6 +9,20 @@ const nextConfig = {
       ...config.experiments,
       asyncWebAssembly: true,
     };
+
+    if (!isServer) {
+        config.resolve.fallback = {
+            ...config.resolve.fallback,
+            fs: false,
+            net: false,
+            tls: false,
+            crypto: require.resolve('crypto-browserify'),
+            stream: require.resolve('stream-browserify'),
+            buffer: require.resolve('buffer'),
+            process: require.resolve('process/browser'),
+            vm: require.resolve('vm-browserify'),
+        };
+    }
     return config;
   },
 };

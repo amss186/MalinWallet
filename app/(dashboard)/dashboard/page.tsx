@@ -6,7 +6,7 @@ import { WalletManager } from '@/services/walletManager';
 import { BitcoinService, BitcoinAddress } from '@/services/bitcoinService';
 import { WalletData } from '@/services/walletStorage';
 import Link from 'next/link';
-import { ArrowUpRight, ArrowDownLeft, Repeat, CreditCard, Home, Settings, Search, MessageCircle } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Repeat, CreditCard, Home, Settings, Search, MessageCircle, ScanLine, LineChart, Layers } from 'lucide-react';
 import fr from '@/locales/fr.json';
 
 export default function Dashboard() {
@@ -75,10 +75,10 @@ export default function Dashboard() {
 
       {/* Quick Actions Row */}
       <div className="grid grid-cols-4 gap-4 px-4 mt-6">
-        <ActionButton icon={<ArrowDownLeft />} label={fr.receive} />
-        <ActionButton icon={<ArrowUpRight />} label={fr.send} />
-        <ActionButton icon={<Repeat />} label={fr.swap} />
-        <ActionButton icon={<CreditCard />} label={fr.buy} />
+        <Link href="/scan"><ActionButton icon={<ScanLine />} label="Scan" /></Link>
+        <Link href="/swap"><ActionButton icon={<Repeat />} label="Bridge" /></Link>
+        <Link href="/earn"><ActionButton icon={<LineChart />} label="Invest" /></Link>
+        <Link href="/dapps"><ActionButton icon={<Layers />} label="NFTs" /></Link>
       </div>
 
       {/* Perps Section */}
@@ -128,12 +128,12 @@ export default function Dashboard() {
       </div>
 
       {/* Bottom Nav */}
-      <div className="fixed bottom-0 w-full bg-[#1C1C1E] border-t border-gray-800 p-4 flex justify-around items-center">
-         <Home className="w-6 h-6 text-[#8A8AFF]" />
-         <CreditCard className="w-6 h-6 text-gray-500" />
-         <Repeat className="w-6 h-6 text-gray-500" />
-         <MessageCircle className="w-6 h-6 text-gray-500" />
-         <Search className="w-6 h-6 text-gray-500" />
+      <div className="fixed bottom-0 w-full bg-[#1C1C1E] border-t border-gray-800 p-4 flex justify-around items-center z-50">
+         <Link href="/dashboard"><Home className="w-6 h-6 text-[#8A8AFF]" /></Link>
+         <Link href="/earn"><CreditCard className="w-6 h-6 text-gray-500" /></Link>
+         <Link href="/swap"><Repeat className="w-6 h-6 text-gray-500" /></Link>
+         <Link href="/scan"><ScanLine className="w-6 h-6 text-gray-500" /></Link>
+         <Link href="/settings"><Settings className="w-6 h-6 text-gray-500" /></Link>
       </div>
 
     </div>
