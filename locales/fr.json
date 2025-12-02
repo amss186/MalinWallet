@@ -1,0 +1,16 @@
+{
+  "total_balance": "Solde total",
+  "send": "Envoyer",
+  "receive": "Recevoir",
+  "swap": "Échanger",
+  "buy": "Acheter",
+  "perps": "Perps",
+  "perps_desc": "Plus de force avec les perps\nÉchangez avec un effet de levier...",
+  "tokens": "Jetons",
+  "settings": "Paramètres",
+  "wallets": "Portefeuilles",
+  "bitcoin_taproot": "Bitcoin (Taproot)",
+  "bitcoin_segwit": "Bitcoin (Native Segwit)",
+  "add_cash": "Ajouter des espèces",
+  "deposit_crypto": "Déposer des cryptomonnaies"
+}
